@@ -1,0 +1,7 @@
+interface:
+  display_name: "Vintage"
+  short_description: "Retro skeuomorphic design guidance for project UI work"
+  default_prompt: "Use $vintage to guide the UI and design-system direction for this project's frontend work."
+
+policy:
+  allow_implicit_invocation: true
