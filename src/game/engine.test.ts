@@ -1,5 +1,6 @@
 import { completeTask, createRunState, getCurrentStep, resolvePopupAction, tickRun } from './engine';
 import { missions } from './missions';
+import { describe, expect, it } from 'vitest';
 
 describe('game engine', () => {
   it('advances on completed tasks and successful real popup resolution', () => {

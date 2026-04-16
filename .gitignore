@@ -1,4 +1,4 @@
 .omx/
 node_modules/
 dist/
-dist/
+coverage/
