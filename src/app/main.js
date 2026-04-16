@@ -101,6 +101,9 @@ function handleClick(event) {
 
   if (target.dataset.nav) {
     window.location.hash = target.dataset.nav;
+    appState.route = parseRoute();
+    syncRouteState();
+    render();
     return;
   }
 
@@ -143,7 +146,7 @@ function handleSubmit(event) {
 
 function startRun(missionId) {
   const mission = getMissionById(missionId);
-  if (!mission || !isDesktopReady()) {
+  if (!mission) {
     render();
     return;
   }
@@ -274,7 +277,7 @@ function render() {
 
   appRoot.innerHTML = `
     <div class="shell grain">
-      <header class="topbar window-frame">
+      <header class="topbar window-frame" data-window-title="SYS://POPUP HELL">
         <div>
           <p class="eyebrow">VINTAGE 업무 생존 훈련</p>
           <h1>Error Popup Hell</h1>
@@ -297,7 +300,7 @@ function render() {
 
 function renderBoot() {
   return `
-    <section class="boot-screen window-frame center-panel" aria-live="polite">
+    <section class="boot-screen window-frame center-panel" data-window-title="BOOT SEQUENCE" aria-live="polite">
       <p class="eyebrow">SYSTEM BOOT</p>
       <h2>CRT 워밍업 중...</h2>
       <p>업무 혼란 시뮬레이터를 준비하고 있습니다.</p>
@@ -324,7 +327,7 @@ function renderLanding() {
 
   return `
     <section class="landing-grid">
-      <section class="hero-panel window-frame">
+      <section class="hero-panel window-frame" data-window-title="EXECUTIVE OVERVIEW">
         <p class="eyebrow">PC ONLY · 2~3분 세션</p>
         <h2>모든 팝업을 치우지 마세요.<br />진짜 문제만 해결하세요.</h2>
         <p class="hero-copy">
@@ -342,7 +345,7 @@ function renderLanding() {
         </ul>
       </section>
       <section class="sidebar-stack">
-        <article class="window-frame hud-preview">
+        <article class="window-frame hud-preview" data-window-title="FAIL STATES">
           <h3>실패 조건</h3>
           <ul>
             <li>제한 시간 종료</li>
@@ -350,7 +353,7 @@ function renderLanding() {
             <li>필수 진짜 방해 요소 미해결 상태로 마지막 단계 시도</li>
           </ul>
         </article>
-        <article class="window-frame mission-preview-list">
+        <article class="window-frame mission-preview-list" data-window-title="MISSION STACK">
           <div class="section-heading">
             <h3>대표 미션</h3>
             <button type="button" class="text-link" data-nav="#/missions">전체 보기</button>
@@ -364,7 +367,7 @@ function renderLanding() {
 
 function renderHowToPlay() {
   return `
-    <section class="window-frame page-panel howto-panel">
+    <section class="window-frame page-panel howto-panel" data-window-title="HELP DESK">
       <div class="section-heading">
         <div>
           <p class="eyebrow">HOW TO PLAY</p>
@@ -373,20 +376,20 @@ function renderHowToPlay() {
         <button type="button" class="retro-button accent" data-nav="#/missions">미션 선택</button>
       </div>
       <div class="howto-grid">
-        <article class="panel-card">
+        <article class="panel-card" data-window-title="RULE 01">
           <h3>1. HUD를 먼저 보세요</h3>
           <p>타이머, 스트라이크, 카오스 게이지와 체크리스트가 항상 현재 우선순위를 알려줍니다.</p>
         </article>
-        <article class="panel-card">
+        <article class="panel-card" data-window-title="RULE 02">
           <h3>2. 진짜 방해 요소는 다음 단계를 막습니다</h3>
           <p>첨부 저장소 용량 초과, 토큰 만료처럼 실제 진행을 막는 팝업은 반드시 해결해야 합니다.</p>
         </article>
-        <article class="panel-card">
+        <article class="panel-card" data-window-title="RULE 03">
           <h3>3. 가짜 팝업은 집중력을 흔듭니다</h3>
           <p>광고, 뉴스레터, 테마 변경 제안 같은 팝업은 닫고 원래 미션으로 돌아오면 됩니다.</p>
         </article>
       </div>
-      <div class="tips-window">
+      <div class="tips-window window-frame" data-window-title="FIELD MANUAL">
         <h3>튜토리얼 힌트</h3>
         <ul>
           <li>버튼 문구를 읽고, 지금 해결해야 하는지 판단하세요.</li>
@@ -402,7 +405,7 @@ function renderHowToPlay() {
 function renderMissions() {
   if (missions.length === 0) {
     return `
-      <section class="window-frame page-panel empty-state">
+      <section class="window-frame page-panel empty-state" data-window-title="SYSTEM NOTICE">
         <h2>준비 중인 미션</h2>
         <p>미션 데이터가 아직 로드되지 않았습니다. 잠시 후 다시 확인하세요.</p>
       </section>
@@ -413,7 +416,7 @@ function renderMissions() {
     .map((mission) => {
       const bestRun = appState.save.bestRuns[mission.id];
       return `
-        <article class="window-frame mission-card">
+        <article class="window-frame mission-card" data-window-title="DOSSIER // ${mission.id.toUpperCase()}">
           <div class="mission-card-head">
             <div>
               <p class="difficulty-chip ${mission.difficulty}">${difficultyLabel(mission.difficulty)}</p>
@@ -442,7 +445,7 @@ function renderMissions() {
 
   return `
     <section class="page-panel mission-page">
-      <div class="section-heading window-frame">
+      <div class="section-heading window-frame" data-window-title="MISSION SELECT">
         <div>
           <p class="eyebrow">MISSION SELECT</p>
           <h2>오늘 처리할 업무를 고르세요</h2>
@@ -462,18 +465,18 @@ function renderRun() {
 
   if (!appState.activeRun || appState.activeRun.phase === 'briefing') {
     return `
-      <section class="window-frame page-panel briefing-panel">
+      <section class="window-frame page-panel briefing-panel" data-window-title="MISSION BRIEF">
         <p class="eyebrow">MISSION BRIEF</p>
         <h2>${mission.title}</h2>
         <p>${mission.brief}</p>
         <div class="briefing-grid">
-          <article class="panel-card">
+          <article class="panel-card" data-window-title="CHECKLIST">
             <h3>체크리스트</h3>
             <ol>
               ${mission.steps.map((step) => `<li>${step.label}</li>`).join('')}
             </ol>
           </article>
-          <article class="panel-card">
+          <article class="panel-card" data-window-title="WIN CONDITIONS">
             <h3>성공 / 실패 조건</h3>
             <ul>
               <li>제한 시간: ${mission.timeLimitSec}초</li>
@@ -488,7 +491,6 @@ function renderRun() {
             class="retro-button primary"
             data-action="start-run"
             data-mission-id="${mission.id}"
-            ${!isDesktopReady() ? 'disabled' : ''}
           >
             미션 시작
           </button>
@@ -503,7 +505,7 @@ function renderRun() {
 
   return `
     <section class="run-layout">
-      <aside class="window-frame hud-panel">
+      <aside class="window-frame hud-panel" data-window-title="RUN HUD">
         <p class="eyebrow">LIVE HUD</p>
         <h2>${runState.mission.title}</h2>
         <dl class="hud-stats">
@@ -528,7 +530,7 @@ function renderRun() {
           <p>${runState.lastFeedback}</p>
         </section>
       </aside>
-      <section class="workspace window-frame">
+      <section class="workspace window-frame" data-window-title="WORK DESK">
         <div class="workspace-top">
           <div>
             <p class="eyebrow">CURRENT TASK</p>
@@ -537,12 +539,12 @@ function renderRun() {
           <button type="button" class="retro-button" data-nav="#/missions">미션 중단</button>
         </div>
         <div class="desk-panel">
-          <article class="panel-card current-step">
+          <article class="panel-card current-step" data-window-title="ACTIVE STEP">
             <h3>다음 행동</h3>
             <p>${currentStep ? currentStep.instruction : '모든 단계를 완료했습니다.'}</p>
             ${currentStep ? renderStepAction(currentStep) : ''}
           </article>
-          <article class="panel-card mission-notes">
+          <article class="panel-card mission-notes" data-window-title="FIELD NOTES">
             <h3>미션 힌트</h3>
             <ul>
               ${runState.mission.tutorialHints.map((hint) => `<li>${hint}</li>`).join('')}
@@ -568,7 +570,7 @@ function renderResult() {
   const bestRun = appState.save.bestRuns[result.missionId];
 
   return `
-    <section class="window-frame page-panel result-panel">
+    <section class="window-frame page-panel result-panel" data-window-title="AFTER ACTION REPORT">
       <p class="eyebrow">RESULT</p>
       <h2>${result.didWin ? '업무 완료!' : '업무 실패!'}</h2>
       <div class="result-hero">
@@ -584,7 +586,7 @@ function renderResult() {
         <div><dt>진짜 해결</dt><dd>${result.resolvedRealPopups}</dd></div>
         <div><dt>가짜 정리</dt><dd>${result.fakeDismissed}</dd></div>
       </dl>
-      <section class="panel-card">
+      <section class="panel-card" data-window-title="DEBRIEF">
         <h3>회고 메모</h3>
         <ul>
           <li>최고 기록: ${bestRun ? `${bestRun.grade} · ${bestRun.score.toLocaleString()}점` : '이번 런이 첫 기록입니다.'}</li>
@@ -602,7 +604,7 @@ function renderResult() {
 
 function renderErrorState(title, body) {
   return `
-    <section class="window-frame page-panel empty-state">
+    <section class="window-frame page-panel empty-state" data-window-title="SYSTEM NOTICE">
       <h2>${title}</h2>
       <p>${body}</p>
       <button type="button" class="retro-button accent" data-nav="#/missions">미션 선택</button>
@@ -634,7 +636,7 @@ function renderPopup(popup, index) {
   const severityLabel = popup.severity === 'high' ? '긴급' : popup.severity === 'medium' ? '주의' : '참고';
 
   return `
-    <article class="popup-card ${popup.severity}" style="--offset-x:${offsetX}px; --offset-y:${offsetY}px;">
+    <article class="popup-card ${popup.severity}" data-window-title="${severityLabel} // ${popup.truthClass === 'real' ? 'REAL' : 'FAKE'}" style="--offset-x:${offsetX}px; --offset-y:${offsetY}px;">
       <header>
         <div>
           <p class="eyebrow">${severityLabel}</p>
