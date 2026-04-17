@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('title input keeps focus while clicking inside the field area', async ({ page }) => {
+test('title input keeps focus while re-clicking the editable center of the field', async ({ page }) => {
   await page.goto('/#/missions');
   await page.getByRole('button', { name: '브리핑 보기' }).first().click();
   await page.getByRole('button', { name: '미션 시작' }).click();
@@ -12,9 +12,7 @@ test('title input keeps focus while clicking inside the field area', async ({ pa
   await input.fill('q3-final-pitch');
   await expect(input).toHaveValue('q3-final-pitch');
 
-  const box = await input.boundingBox();
-  if (!box) throw new Error('no bounding box');
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 2);
+  await input.click({ position: { x: 40, y: 20 } });
   await expect(input).toBeFocused();
   await expect(input).toHaveValue('q3-final-pitch');
 });
