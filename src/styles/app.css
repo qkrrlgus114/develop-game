@@ -1,11 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Silkscreen:wght@400;700&display=swap');
+
 :root {
-  --bg: #0d1a1b;
-  --wallpaper: #123236;
+  --bg: #008080;
+  --wallpaper: #00706f;
   --surface: #c0c0c0;
   --surface-mid: #d0d0d0;
   --surface-strong: #ededed;
   --surface-shadow: #797979;
-  --paper: #fff6ce;
+  --paper: #f4f1de;
   --ink: #101010;
   --primary: #008080;
   --primary-dark: #005a5a;
@@ -16,10 +18,14 @@
   --warning: #d97706;
   --success: #1f7a34;
   --focus: #ffd54f;
-  --shadow: 8px 8px 0 rgba(8, 15, 16, 0.92);
-  --shadow-soft: 2px 2px 0 rgba(16, 16, 16, 0.45);
-  --font-display: 'Silkscreen', 'Courier New', monospace;
-  --font-body: 'Trebuchet MS', 'Verdana', sans-serif;
+  --shadow: 4px 4px 0 rgba(0, 0, 0, 0.58);
+  --shadow-soft: 1px 1px 0 rgba(0, 0, 0, 0.35);
+  --window-title-height: 30px;
+  --window-title-gap: 16px;
+  --font-brand: 'Silkscreen', 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --font-ui: 'Noto Sans KR', 'Tahoma', 'MS Sans Serif', 'Segoe UI', sans-serif;
+  --font-display: var(--font-ui);
+  --font-body: var(--font-ui);
 }
 
 * {
@@ -34,9 +40,7 @@ body {
 
 body {
   background:
-    radial-gradient(circle at top, rgba(255, 247, 207, 0.16), transparent 18%),
-    radial-gradient(circle at 15% 20%, rgba(60, 201, 193, 0.18), transparent 16%),
-    linear-gradient(180deg, #173a40 0%, #081213 100%);
+    linear-gradient(180deg, #0a8080 0%, #046565 100%);
   color: var(--ink);
   font-family: var(--font-body);
   position: relative;
@@ -47,14 +51,11 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.18;
+  opacity: 0.12;
   background-image:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
-    linear-gradient(225deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
-    linear-gradient(315deg, rgba(0, 0, 0, 0.1) 25%, transparent 25%),
-    linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%);
-  background-position: 14px 0, 14px 0, 0 0, 0 0;
-  background-size: 28px 28px;
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 12px 12px;
 }
 
 button,
@@ -88,7 +89,7 @@ button:disabled {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.14;
+  opacity: 0.05;
   background-image:
     linear-gradient(transparent 50%, rgba(0, 0, 0, 0.08) 50%),
     radial-gradient(rgba(255, 255, 255, 0.12) 0.8px, transparent 0.8px);
@@ -104,17 +105,13 @@ main {
 .popup-card {
   position: relative;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 20%),
     linear-gradient(180deg, var(--surface-strong), var(--surface-mid) 34%, var(--surface) 100%);
   border: 2px solid #111;
   box-shadow:
     var(--shadow),
-    inset 2px 2px 0 rgba(255, 255, 255, 0.92),
-    inset -3px -3px 0 var(--surface-shadow);
-}
-
-[data-window-title] {
-  padding-top: 50px;
+    inset 1px 1px 0 rgba(255, 255, 255, 0.92),
+    inset -2px -2px 0 var(--surface-shadow);
 }
 
 [data-window-title]::before {
@@ -123,18 +120,21 @@ main {
   top: 0;
   left: 0;
   right: 0;
-  height: 30px;
+  height: var(--window-title-height);
   display: flex;
   align-items: center;
-  padding: 0 14px;
+  padding: 0 88px 0 14px;
   font-family: var(--font-display);
-  font-size: 0.72rem;
-  letter-spacing: 0.09em;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   color: #f8fbff;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
   background:
     linear-gradient(90deg, var(--window-blue), var(--window-blue-light) 52%, var(--primary) 100%);
   border-bottom: 2px solid #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 [data-window-title]::after {
@@ -162,8 +162,9 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
-  padding: 18px 20px 20px;
+  padding: 14px 18px 16px;
 }
 
 .topbar h1,
@@ -176,18 +177,37 @@ main {
 .boot-screen h2 {
   margin: 0;
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
+  font-weight: 700;
 }
 
 .topbar h1 {
-  font-size: 1.7rem;
+  font-family: var(--font-brand);
+  font-size: 1.45rem;
+  letter-spacing: 0.08em;
+  text-wrap: balance;
+}
+
+.topbar > *,
+.landing-grid > *,
+.sidebar-stack > *,
+.mission-card-head > *,
+.workspace-top > *,
+.section-heading > *,
+.result-hero > *,
+.briefing-grid > *,
+.howto-grid > *,
+.cta-row > *,
+.footer > * {
+  min-width: 0;
 }
 
 .eyebrow {
   margin: 0 0 6px;
   color: var(--primary-dark);
-  font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
   opacity: 0.92;
 }
@@ -212,29 +232,47 @@ main {
   flex-wrap: wrap;
 }
 
+.topbar h1,
+.hero-panel h2,
+.hero-copy,
+.section-heading h2,
+.mission-card h2,
+.mission-card p,
+.mission-preview h3,
+.mission-preview p,
+.panel-card h3,
+.panel-card p,
+.hud-preview li,
+.result-panel li,
+.footer span,
+.resolution-warning span {
+  overflow-wrap: anywhere;
+}
+
 .retro-button,
 .text-link {
   border-width: 2px;
   border-style: solid;
   border-color: #fff #1c1c1c #1c1c1c #fff;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 28%),
-    linear-gradient(180deg, #f4f4f4, #bcbcbc);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent 38%),
+    linear-gradient(180deg, #dfdfdf, #bfbfbf);
   box-shadow:
     var(--shadow-soft),
     inset 1px 1px 0 rgba(255, 255, 255, 0.84);
   color: #111;
-  padding: 10px 16px;
-  min-height: 44px;
-  font-family: var(--font-display);
-  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+  padding: 8px 14px;
+  min-height: 38px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
 }
 
 .retro-button.primary,
 .retro-button.accent {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent 28%),
-    linear-gradient(180deg, #5ce0d6, var(--primary-soft) 46%, var(--primary) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 35%),
+    linear-gradient(180deg, #48d4ca, #1ea9a0 52%, #008080 100%);
   color: #021616;
 }
 
@@ -261,7 +299,11 @@ main {
 .page-panel,
 .hud-panel,
 .workspace {
-  padding: 20px;
+  padding: 18px;
+}
+
+[data-window-title]:not(.topbar) {
+  padding-top: calc(var(--window-title-height) + var(--window-title-gap)) !important;
 }
 
 .landing-grid,
@@ -271,35 +313,34 @@ main {
 .mission-grid,
 .desk-panel {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 
 .landing-grid {
   grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.95fr);
+  align-items: start;
 }
 
 .sidebar-stack {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 
 .hero-panel {
   background:
-    linear-gradient(180deg, rgba(255, 248, 210, 0.26), transparent 20%),
-    linear-gradient(135deg, rgba(16, 63, 129, 0.15), transparent 45%),
-    linear-gradient(180deg, #f1efe0, #cdc6a9 72%, #b9b08a);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 20%),
+    linear-gradient(180deg, #f2efdf, #ddd8bf 72%, #c7c0a0);
 }
 
 .hero-panel h2 {
-  font-size: clamp(2rem, 4vw, 3.3rem);
-  line-height: 1.16;
-  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.45);
+  font-size: clamp(1.85rem, 3.2vw, 2.65rem);
+  line-height: 1.1;
 }
 
 .hero-copy {
-  max-width: 58ch;
-  line-height: 1.6;
-  font-size: 1.05rem;
+  max-width: 54ch;
+  line-height: 1.5;
+  font-size: 1rem;
 }
 
 .rule-list,
@@ -317,7 +358,7 @@ main {
 .tips-window,
 .boot-screen,
 .resolution-warning {
-  padding: 16px;
+  padding: 14px;
 }
 
 .hud-preview,
@@ -332,7 +373,7 @@ main {
 .mission-preview-list,
 .hud-preview,
 .tips-window {
-  padding: 18px;
+  padding: 16px;
 }
 
 .mission-preview,
@@ -368,6 +409,12 @@ main {
   font-family: var(--font-display);
 }
 
+.run-meta {
+  margin: 0;
+  color: #244140;
+  font-size: 0.9rem;
+}
+
 .difficulty-chip,
 .popup-kind,
 .grade-badge {
@@ -397,14 +444,24 @@ main {
 }
 
 .mission-card {
-  padding: 18px;
+  padding: 16px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .mission-card-head,
 .stats-inline {
   justify-content: space-between;
+}
+
+.stats-inline,
+.section-heading,
+.workspace-top,
+.popup-card header,
+.result-hero,
+.resolution-warning,
+.footer {
+  flex-wrap: wrap;
 }
 
 .run-layout {
@@ -427,7 +484,7 @@ main {
 
 .checklist li {
   border: 2px solid #111;
-  padding: 10px;
+  padding: 8px 10px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08)),
     rgba(255, 255, 255, 0.3);
@@ -451,14 +508,26 @@ main {
 .workspace {
   min-height: 720px;
   display: grid;
-  gap: 20px;
+  gap: 16px;
   background:
-    linear-gradient(180deg, rgba(10, 18, 26, 0.14), transparent 22%),
-    linear-gradient(180deg, #e7e4d3, #c8c2a8 82%, #b1a983);
+    linear-gradient(180deg, rgba(10, 18, 26, 0.12), transparent 22%),
+    linear-gradient(180deg, #e9e5d3, #d0c8ac 82%, #bbb18e);
 }
 
 .workspace-top {
   justify-content: space-between;
+}
+
+.progress-pill {
+  margin: 0;
+  padding: 6px 10px;
+  border: 2px solid #111;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 28%),
+    linear-gradient(180deg, #f0e6bb, #d1c690);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.65);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
 }
 
 .desk-panel {
@@ -495,7 +564,7 @@ input {
 
 .popup-layer {
   position: relative;
-  min-height: 320px;
+  min-height: 360px;
   border: 2px dashed rgba(17, 17, 17, 0.45);
   background:
     linear-gradient(180deg, rgba(8, 16, 22, 0.08), transparent 24%),
@@ -504,20 +573,75 @@ input {
   overflow: hidden;
 }
 
+.workspace-backdrop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 100%;
+  align-content: start;
+}
+
+.ambient-card {
+  min-height: 148px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 20%),
+    linear-gradient(180deg, rgba(242, 236, 214, 0.92), rgba(211, 203, 174, 0.82));
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.72),
+    3px 3px 0 rgba(16, 16, 16, 0.18);
+}
+
+.ambient-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+
+.ambient-stats dt {
+  font-size: 0.78rem;
+  color: #304746;
+}
+
+.ambient-stats dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
 .popup-card {
   position: absolute;
   top: var(--offset-y);
   left: var(--offset-x);
-  width: min(360px, 80%);
+  z-index: var(--popup-z, 1);
+  width: min(320px, calc(100% - 96px));
   padding: 14px;
   display: grid;
   gap: 12px;
-  animation: popup-arrive 180ms steps(4);
+  opacity: 1;
+  animation: popup-arrive 180ms steps(4) both;
+  pointer-events: auto;
 }
 
 .popup-card.low { border-left: 8px solid var(--primary-dark); }
 .popup-card.medium { border-left: 8px solid var(--warning); }
 .popup-card.high { border-left: 8px solid var(--danger); }
+
+.popup-card.is-blocker {
+  box-shadow:
+    0 0 0 3px rgba(181, 42, 42, 0.18),
+    var(--shadow),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.92),
+    inset -3px -3px 0 var(--surface-shadow);
+}
+
+.popup-card.is-noise {
+  width: min(280px, calc(100% - 112px));
+  opacity: 0.94;
+}
+
+.popup-card.is-priority {
+  transform: translate(-6px, -10px);
+}
 
 .popup-card header {
   display: flex;
@@ -579,6 +703,7 @@ input {
   margin-top: 20px;
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 16px;
   padding: 12px 4px 0;
   color: #e6f7f6;
@@ -622,7 +747,9 @@ input {
   .desk-panel,
   .mission-grid,
   .briefing-grid,
-  .howto-grid {
+  .howto-grid,
+  .workspace-backdrop,
+  .ambient-stats {
     grid-template-columns: 1fr;
   }
 
