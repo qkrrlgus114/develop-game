@@ -2,8 +2,8 @@ import { ChecklistPanel } from '../components/ui/ChecklistPanel';
 import { DesktopWarning } from '../components/ui/DesktopWarning';
 import { HudStat } from '../components/ui/HudStat';
 import { PopupStack } from '../components/ui/PopupStack';
-import { VintageButton } from '../components/ui/VintageButton';
-import { VintagePanel } from '../components/ui/VintagePanel';
+import { NeoBureauButton } from '../components/ui/NeoBureauButton';
+import { NeoBureauPanel } from '../components/ui/NeoBureauPanel';
 import type { PopupCardModel, RunChecklistItem } from './types';
 
 const defaultChecklist: RunChecklistItem[] = [
@@ -44,7 +44,7 @@ export function RunPage({ checklist = defaultChecklist, popups = defaultPopups }
           <p className="page-header__eyebrow">Run / office-mail-001</p>
           <h1>긴급 메일 발송</h1>
         </div>
-        <VintageButton variant="secondary">미션 포기</VintageButton>
+        <NeoBureauButton variant="secondary">미션 포기</NeoBureauButton>
       </header>
 
       <section className="run-layout" aria-label="플레이 화면">
@@ -59,7 +59,7 @@ export function RunPage({ checklist = defaultChecklist, popups = defaultPopups }
         </aside>
 
         <section className="run-layout__workspace" aria-label="업무 작업 영역">
-          <VintagePanel title="메일 작성 창" eyebrow="Workspace" className="workspace-panel">
+          <NeoBureauPanel title="메일 작성 창" eyebrow="Workspace" className="workspace-panel">
             <div className="workspace-mail-form">
               <label>
                 받는 사람
@@ -79,10 +79,10 @@ export function RunPage({ checklist = defaultChecklist, popups = defaultPopups }
               </label>
             </div>
             <div className="workspace-panel__actions">
-              <VintageButton>현재 단계 완료</VintageButton>
-              <VintageButton variant="secondary">가짜 팝업 무시 연습</VintageButton>
+              <NeoBureauButton>현재 단계 완료</NeoBureauButton>
+              <NeoBureauButton variant="secondary">가짜 팝업 무시 연습</NeoBureauButton>
             </div>
-          </VintagePanel>
+          </NeoBureauPanel>
           <PopupStack popups={popups} />
         </section>
       </section>

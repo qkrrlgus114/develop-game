@@ -1,0 +1,7 @@
+interface:
+  display_name: "Neo-Bureaucrat"
+  short_description: "Editorial Windows 95/98 workstation guidance for project UI work"
+  default_prompt: "Use $neo-bureaucrat to apply the Neo-Bureaucrat design system to this project's frontend work."
+
+policy:
+  allow_implicit_invocation: true

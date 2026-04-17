@@ -1,6 +1,6 @@
 import { DesktopWarning } from '../components/ui/DesktopWarning';
-import { VintageButton } from '../components/ui/VintageButton';
-import { VintagePanel } from '../components/ui/VintagePanel';
+import { NeoBureauButton } from '../components/ui/NeoBureauButton';
+import { NeoBureauPanel } from '../components/ui/NeoBureauPanel';
 import type { ResultSummary } from './types';
 
 const defaultSummary: ResultSummary = {
@@ -31,7 +31,7 @@ export function ResultPage({ summary = defaultSummary }: ResultPageProps) {
       </header>
 
       <section className="result-grid">
-        <VintagePanel title="결과 요약" eyebrow="Summary">
+        <NeoBureauPanel title="결과 요약" eyebrow="Summary">
           <dl className="result-stats" aria-label="결과 요약 통계">
             <div>
               <dt>등급</dt>
@@ -50,19 +50,19 @@ export function ResultPage({ summary = defaultSummary }: ResultPageProps) {
               <dd>{summary.resolvedBlockers}건</dd>
             </div>
           </dl>
-        </VintagePanel>
-        <VintagePanel title="회고 메모" eyebrow="Debrief">
+        </NeoBureauPanel>
+        <NeoBureauPanel title="회고 메모" eyebrow="Debrief">
           <ul className="bullet-list">
             <li>가짜 업데이트 팝업은 무시해도 진행 가능했습니다.</li>
             <li>실제 검역 경고를 늦게 처리하면 타이머 손실이 커집니다.</li>
             <li>다음 도전에서는 스트라이크를 0회로 유지해 S 등급을 노려보세요.</li>
           </ul>
-        </VintagePanel>
+        </NeoBureauPanel>
       </section>
 
       <div className="page-actions">
-        <VintageButton>같은 미션 다시 하기</VintageButton>
-        <VintageButton variant="secondary">다른 미션 선택</VintageButton>
+        <NeoBureauButton>같은 미션 다시 하기</NeoBureauButton>
+        <NeoBureauButton variant="secondary">다른 미션 선택</NeoBureauButton>
       </div>
     </main>
   );

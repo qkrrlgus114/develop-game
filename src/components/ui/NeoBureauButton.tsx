@@ -1,23 +1,23 @@
 import type { ButtonHTMLAttributes, PropsWithChildren } from 'react';
 
-type VintageButtonProps = PropsWithChildren<
+type NeoBureauButtonProps = PropsWithChildren<
   ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: 'primary' | 'secondary' | 'danger';
     fullWidth?: boolean;
   }
 >;
 
-export function VintageButton({
+export function NeoBureauButton({
   variant = 'primary',
   fullWidth = false,
   className,
   children,
   ...props
-}: VintageButtonProps) {
-  const classes = ['vintage-button', `vintage-button--${variant}`];
+}: NeoBureauButtonProps) {
+  const classes = ['neo-bureau-button', `neo-bureau-button--${variant}`];
 
   if (fullWidth) {
-    classes.push('vintage-button--full-width');
+    classes.push('neo-bureau-button--full-width');
   }
 
   if (className) {
@@ -26,7 +26,7 @@ export function VintageButton({
 
   return (
     <button className={classes.join(' ')} {...props}>
-      <span className="vintage-button__label">{children}</span>
+      <span className="neo-bureau-button__label">{children}</span>
     </button>
   );
 }

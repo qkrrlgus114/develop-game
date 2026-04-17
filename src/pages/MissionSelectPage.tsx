@@ -1,6 +1,6 @@
 import { DesktopWarning } from '../components/ui/DesktopWarning';
 import { MissionCard } from '../components/ui/MissionCard';
-import { VintagePanel } from '../components/ui/VintagePanel';
+import { NeoBureauPanel } from '../components/ui/NeoBureauPanel';
 import type { MissionCardModel } from './types';
 
 const defaultMissions: MissionCardModel[] = [
@@ -38,13 +38,13 @@ export function MissionSelectPage({ missions = defaultMissions, onSelectMission 
         <p>추천 순서 → 난이도 → 제목 순으로 정렬된 미션입니다. 모든 카드는 데스크톱 기준 정보 밀도를 유지합니다.</p>
       </header>
 
-      <VintagePanel title="미션 목록" eyebrow="Playable missions" className="mission-grid-panel">
+      <NeoBureauPanel title="미션 목록" eyebrow="Playable missions" className="mission-grid-panel">
         <div className="mission-grid">
           {missions.map((mission) => (
             <MissionCard key={mission.id} mission={mission} onSelect={onSelectMission} />
           ))}
         </div>
-      </VintagePanel>
+      </NeoBureauPanel>
     </main>
   );
 }

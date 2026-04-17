@@ -1,5 +1,5 @@
 import type { PopupCardModel } from '../../pages/types';
-import { VintageButton } from './VintageButton';
+import { NeoBureauButton } from './NeoBureauButton';
 
 type PopupStackProps = {
   popups: PopupCardModel[];
@@ -21,10 +21,10 @@ export function PopupStack({ popups }: PopupStackProps) {
           </header>
           <p className="popup-window__body">{popup.body}</p>
           <div className="popup-window__actions">
-            <VintageButton variant={popup.tone === 'real' ? 'danger' : 'secondary'}>
+            <NeoBureauButton variant={popup.tone === 'real' ? 'danger' : 'secondary'}>
               {popup.actionLabel}
-            </VintageButton>
-            {popup.secondaryLabel ? <VintageButton variant="secondary">{popup.secondaryLabel}</VintageButton> : null}
+            </NeoBureauButton>
+            {popup.secondaryLabel ? <NeoBureauButton variant="secondary">{popup.secondaryLabel}</NeoBureauButton> : null}
           </div>
         </article>
       ))}

@@ -1,6 +1,6 @@
 import type { MissionCardModel } from '../../pages/types';
-import { VintageButton } from './VintageButton';
-import { VintagePanel } from './VintagePanel';
+import { NeoBureauButton } from './NeoBureauButton';
+import { NeoBureauPanel } from './NeoBureauPanel';
 
 type MissionCardProps = {
   mission: MissionCardModel;
@@ -9,7 +9,7 @@ type MissionCardProps = {
 
 export function MissionCard({ mission, onSelect }: MissionCardProps) {
   return (
-    <VintagePanel
+    <NeoBureauPanel
       className="mission-card"
       eyebrow={mission.recommended ? '추천 미션' : '업무 미션'}
       title={mission.title}
@@ -29,9 +29,9 @@ export function MissionCard({ mission, onSelect }: MissionCardProps) {
           <dd>{mission.estimatedPlayMinutes}분</dd>
         </div>
       </dl>
-      <VintageButton fullWidth onClick={() => onSelect?.(mission.id)}>
+      <NeoBureauButton fullWidth onClick={() => onSelect?.(mission.id)}>
         이 미션 플레이
-      </VintageButton>
-    </VintagePanel>
+      </NeoBureauButton>
+    </NeoBureauPanel>
   );
 }

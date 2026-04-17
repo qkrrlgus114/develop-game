@@ -6,9 +6,9 @@
 
 html {
   background:
-    linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), var(--vintage-grid) calc(100% - 1px)),
-    linear-gradient(transparent 0, transparent calc(100% - 1px), var(--vintage-grid) calc(100% - 1px)),
-    #6b7280;
+    linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), var(--neo-bureau-grid) calc(100% - 1px)),
+    linear-gradient(transparent 0, transparent calc(100% - 1px), var(--neo-bureau-grid) calc(100% - 1px)),
+    var(--neo-bureau-desktop-surface);
   background-size: 32px 32px;
 }
 
@@ -16,8 +16,8 @@ body {
   margin: 0;
   min-width: 1280px;
   font-family: var(--font-body);
-  color: var(--vintage-ink);
-  background: radial-gradient(circle at top, #8f8f8f 0%, #5f5f5f 55%, #404040 100%);
+  color: var(--neo-bureau-ink);
+  background: radial-gradient(circle at top, #149595 0%, var(--neo-bureau-desktop-surface) 55%, #056b6b 100%);
 }
 
 button,
@@ -31,7 +31,7 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--vintage-focus);
+  outline: 3px solid var(--neo-bureau-focus);
   outline-offset: 3px;
 }
 
@@ -65,12 +65,12 @@ button {
 
 .page-header__eyebrow,
 .hero-panel__eyebrow,
-.vintage-panel__eyebrow {
+.neo-bureau-panel__eyebrow {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
-  color: var(--vintage-ink-soft);
+  color: var(--neo-bureau-ink-soft);
 }
 
 h1,
@@ -88,14 +88,15 @@ dl {
 }
 
 .hero-panel,
-.vintage-panel,
+.neo-bureau-panel,
 .popup-window,
 .desktop-warning {
-  background: linear-gradient(180deg, var(--vintage-surface-raised), var(--vintage-surface));
-  border: var(--border-window) solid var(--vintage-border-dark);
+  background: linear-gradient(180deg, var(--neo-bureau-window-surface), var(--neo-bureau-panel-surface));
+  border: var(--border-window) solid var(--neo-bureau-bevel-shadow);
   box-shadow:
-    inset 2px 2px 0 var(--vintage-border-light),
-    6px 6px 0 var(--vintage-shadow);
+    inset 2px 2px 0 var(--neo-bureau-bevel-light),
+    inset -2px -2px 0 var(--neo-bureau-bevel-shadow),
+    0 20px 50px var(--neo-bureau-shadow);
 }
 
 .hero-panel {
@@ -149,57 +150,62 @@ dl {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.vintage-panel {
+.neo-bureau-panel {
   padding: var(--space-4);
   display: grid;
   gap: var(--space-4);
 }
 
-.vintage-panel__header {
+.neo-bureau-panel__header {
   display: flex;
   justify-content: space-between;
   gap: var(--space-3);
   align-items: flex-start;
 }
 
-.vintage-panel__body {
+.neo-bureau-panel__body {
   display: grid;
   gap: var(--space-3);
 }
 
-.vintage-button {
-  border: 2px solid var(--vintage-border-dark);
-  background: linear-gradient(180deg, #f1f1f1, #b8b8b8);
-  color: var(--vintage-ink);
+.neo-bureau-button {
+  border: 2px solid var(--neo-bureau-command-accent-deep);
+  background: linear-gradient(180deg, var(--neo-bureau-window-surface), var(--neo-bureau-panel-surface));
+  color: var(--neo-bureau-ink);
   padding: 10px 14px;
   min-height: 44px;
   font-weight: 700;
-  box-shadow: inset 1px 1px 0 var(--vintage-border-light);
+  box-shadow:
+    inset 1px 1px 0 var(--neo-bureau-bevel-light),
+    inset -1px -1px 0 var(--neo-bureau-bevel-shadow);
 }
 
-.vintage-button:hover {
+.neo-bureau-button:hover {
   transform: translateY(-1px);
 }
 
-.vintage-button:active {
+.neo-bureau-button:active {
   transform: translateY(1px);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.18);
+  box-shadow:
+    inset 2px 2px 0 var(--neo-bureau-bevel-shadow),
+    inset -2px -2px 0 var(--neo-bureau-bevel-light);
 }
 
-.vintage-button--primary {
-  background: linear-gradient(180deg, #1bc2c2, var(--vintage-primary));
-}
-
-.vintage-button--secondary {
-  background: linear-gradient(180deg, #e7e7e7, #c7c7c7);
-}
-
-.vintage-button--danger {
-  background: linear-gradient(180deg, #ef4444, #b91c1c);
+.neo-bureau-button--primary {
+  background: linear-gradient(180deg, #6d73db, var(--neo-bureau-command-accent));
   color: #fff;
 }
 
-.vintage-button--full-width {
+.neo-bureau-button--secondary {
+  background: linear-gradient(180deg, var(--neo-bureau-window-surface), var(--neo-bureau-panel-surface));
+}
+
+.neo-bureau-button--danger {
+  background: linear-gradient(180deg, #d94848, var(--neo-bureau-danger));
+  color: #fff;
+}
+
+.neo-bureau-button--full-width {
   width: 100%;
 }
 
@@ -261,7 +267,7 @@ dl {
 .hud-stat {
   padding: var(--space-3);
   background: linear-gradient(180deg, #f5f5f5, #cfcfcf);
-  border: 2px solid var(--vintage-border-dark);
+  border: 2px solid var(--neo-bureau-bevel-shadow);
   display: grid;
   gap: var(--space-1);
 }
@@ -277,15 +283,15 @@ dl {
 }
 
 .hud-stat--warning {
-  border-color: var(--vintage-warning);
+  border-color: var(--neo-bureau-warning);
 }
 
 .hud-stat--danger {
-  border-color: var(--vintage-danger);
+  border-color: var(--neo-bureau-danger);
 }
 
 .hud-stat--success {
-  border-color: var(--vintage-success);
+  border-color: var(--neo-bureau-success);
 }
 
 .checklist-panel__list {
@@ -304,11 +310,11 @@ dl {
 }
 
 .checklist-panel__item--current {
-  border-left: 6px solid var(--vintage-primary);
+  border-left: 6px solid var(--neo-bureau-command-accent);
 }
 
 .checklist-panel__item--done {
-  border-left: 6px solid var(--vintage-success);
+  border-left: 6px solid var(--neo-bureau-success);
 }
 
 .workspace-mail-form {
@@ -325,7 +331,7 @@ dl {
 .workspace-mail-form input,
 .workspace-mail-form textarea {
   width: 100%;
-  border: 2px solid var(--vintage-border-dark);
+  border: 2px solid var(--neo-bureau-bevel-shadow);
   background: #f8f8f8;
   padding: 10px 12px;
 }
@@ -370,12 +376,12 @@ dl {
 }
 
 .popup-window--real {
-  border-color: var(--vintage-danger);
+  border-color: var(--neo-bureau-danger);
   z-index: 10;
 }
 
 .popup-window--fake {
-  border-color: var(--vintage-primary);
+  border-color: var(--neo-bureau-command-accent);
   z-index: 1;
 }
 
@@ -384,13 +390,13 @@ dl {
   align-items: center;
   gap: var(--space-2);
   font-size: 0.85rem;
-  color: var(--vintage-ink-soft);
+  color: var(--neo-bureau-ink-soft);
 }
 
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  border: 2px solid var(--vintage-border-dark);
+  border: 2px solid var(--neo-bureau-bevel-shadow);
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -398,7 +404,7 @@ dl {
 
 .meta {
   font-size: 0.82rem;
-  color: var(--vintage-ink-soft);
+  color: var(--neo-bureau-ink-soft);
 }
 
 @media (max-width: 1366px) {

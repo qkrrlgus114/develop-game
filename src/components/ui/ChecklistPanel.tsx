@@ -1,5 +1,5 @@
 import type { RunChecklistItem } from '../../pages/types';
-import { VintagePanel } from './VintagePanel';
+import { NeoBureauPanel } from './NeoBureauPanel';
 
 type ChecklistPanelProps = {
   items: RunChecklistItem[];
@@ -7,7 +7,7 @@ type ChecklistPanelProps = {
 
 export function ChecklistPanel({ items }: ChecklistPanelProps) {
   return (
-    <VintagePanel title="오늘의 체크리스트" eyebrow="Run HUD" className="checklist-panel">
+    <NeoBureauPanel title="오늘의 체크리스트" eyebrow="Run HUD" className="checklist-panel">
       <ol className="checklist-panel__list">
         {items.map((item) => (
           <li key={item.id} className={`checklist-panel__item checklist-panel__item--${item.status}`}>
@@ -18,6 +18,6 @@ export function ChecklistPanel({ items }: ChecklistPanelProps) {
           </li>
         ))}
       </ol>
-    </VintagePanel>
+    </NeoBureauPanel>
   );
 }
