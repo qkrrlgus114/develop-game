@@ -219,6 +219,11 @@ export function App() {
                     <div><span>남은 시간</span><strong>{run.timeRemaining}s</strong></div>
                     <div><span>스트라이크</span><strong>{run.strikes} / 3</strong></div>
                     <div><span>카오스 게이지</span><strong>{run.chaos}%</strong></div>
+                    <div><span>진행도</span><strong>{run.currentIndex} / {run.mission.steps.length}</strong></div>
+                  </div>
+                  <div className="mission-context">
+                    <span className="badge">{run.mission.difficulty}</span>
+                    <span className="meta">제한 {Math.ceil(run.mission.timeLimitSeconds / 60)}분 · 예상 {run.mission.estimatedMinutes}</span>
                   </div>
                   <p className="feedback" role="status">{run.lastFeedback}</p>
                 </section>
@@ -253,7 +258,7 @@ export function App() {
                   {currentStep?.type === 'popup' && (
                     <div className={`popup-window ${currentStep.kind}`} role="dialog" aria-labelledby="popup-title">
                       <div className="window-titlebar">
-                        <span>{currentStep.kind === 'real' ? 'REAL ALERT' : 'NOISY POPUP'}</span>
+                        <span>SYSTEM NOTIFICATION</span>
                         <span aria-hidden="true">▣</span>
                       </div>
                       <div className="window-body">
