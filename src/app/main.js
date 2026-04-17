@@ -18,6 +18,8 @@ const MIN_WIDTH = 1280;
 const MIN_HEIGHT = 720;
 const TICK_INTERVAL_MS = 1000;
 const TASKBAR_HEIGHT = 46;
+const MIN_VISIBLE_TITLEBAR_WIDTH = 160;
+const MIN_VISIBLE_TITLEBAR_HEIGHT = 36;
 
 const DESKTOP_ICONS = [
   { id: 'desktop-computer', kind: 'app', code: 'PC', label: 'My Computer', doubleNav: '#/' },
@@ -61,6 +63,7 @@ const appState = {
   windowState: {
     nextZ: 30,
     positions: {},
+    openWindows: [],
   },
 };
 
@@ -69,6 +72,7 @@ let activeDrag = null;
 
 window.setTimeout(() => {
   appState.booting = false;
+  syncRouteState();
   render();
 }, 360);
 
@@ -112,12 +116,20 @@ function parseRoute() {
 }
 
 function syncRouteState() {
+  if (appState.route.page === 'landing') {
+    ensureWindowOpen('landing-welcome');
+    ensureWindowOpen('landing-preview');
+  }
+
   if (appState.route.page === 'missions') {
+    ensureWindowOpen('games-folder');
     bringWindowToFront('games-folder');
   }
 
   if (appState.route.page === 'how-to-play' && appState.route.missionId) {
     appState.selectedMissionId = appState.route.missionId;
+    ensureWindowOpen('games-folder');
+    ensureWindowOpen('popup-hell-launcher');
     ensureWindowState('games-folder', WINDOW_DEFAULTS['games-folder']);
     bringWindowToFront('popup-hell-launcher');
   }
@@ -138,6 +150,16 @@ function syncRouteState() {
       };
     }
 
+    if (appState.activeRun.phase === 'briefing') {
+      ensureWindowOpen('briefing-window');
+      closeWindow('run-hud');
+      closeWindow('run-workspace');
+    } else {
+      ensureWindowOpen('run-hud');
+      ensureWindowOpen('run-workspace');
+      closeWindow('briefing-window');
+    }
+
     bringWindowToFront(appState.activeRun.phase === 'briefing' ? 'briefing-window' : 'run-workspace');
 
     return;
@@ -145,6 +167,10 @@ function syncRouteState() {
 
   if (appState.route.page === 'result' && appState.activeRun) {
     appState.activeRun.phase = 'result';
+    ensureWindowOpen('result-window');
+    closeWindow('briefing-window');
+    closeWindow('run-hud');
+    closeWindow('run-workspace');
     bringWindowToFront('result-window');
   }
 
@@ -237,8 +263,53 @@ function handleClick(event) {
     return;
   }
 
+  if (action === 'close-window' && target.dataset.windowIdTarget) {
+    closeWindow(target.dataset.windowIdTarget);
+    render();
+    return;
+  }
+
+  if (action === 'minimize-window' && target.dataset.windowIdTarget) {
+    const windowState = ensureWindowState(target.dataset.windowIdTarget, WINDOW_DEFAULTS[target.dataset.windowIdTarget]);
+    windowState.minimized = true;
+    render();
+    return;
+  }
+
+  if (action === 'toggle-maximize-window' && target.dataset.windowIdTarget) {
+    const windowId = target.dataset.windowIdTarget;
+    const windowState = ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]);
+
+    if (windowState.maximized) {
+      windowState.maximized = false;
+      windowState.x = windowState.restoreX ?? WINDOW_DEFAULTS[windowId]?.x ?? 120;
+      windowState.y = windowState.restoreY ?? WINDOW_DEFAULTS[windowId]?.y ?? 72;
+    } else {
+      windowState.restoreX = windowState.x;
+      windowState.restoreY = windowState.y;
+      windowState.maximized = true;
+      windowState.minimized = false;
+      bringWindowToFront(windowId);
+    }
+
+    render();
+    return;
+  }
+
   if (action === 'focus-window' && target.dataset.taskWindowId) {
-    bringWindowToFront(target.dataset.taskWindowId);
+    const windowId = target.dataset.taskWindowId;
+    const windowState = ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]);
+    const activeWindowId = getActiveWindowId()?.id ?? '';
+
+    if (windowState.minimized) {
+      windowState.minimized = false;
+      bringWindowToFront(windowId);
+    } else if (activeWindowId === windowId) {
+      windowState.minimized = true;
+    } else {
+      bringWindowToFront(windowId);
+    }
+
     render();
     return;
   }
@@ -313,11 +384,27 @@ function handlePointerMove(event) {
     return;
   }
 
-  const nextX = event.clientX - activeDrag.offsetX;
-  const nextY = event.clientY - activeDrag.offsetY;
-  const position = ensureWindowState(activeDrag.windowId, WINDOW_DEFAULTS[activeDrag.windowId]);
-  position.x = clamp(nextX, 12, Math.max(12, window.innerWidth - activeDrag.width - 12));
-  position.y = clamp(nextY, 12, Math.max(12, window.innerHeight - TASKBAR_HEIGHT - activeDrag.height - 12));
+  const dragState = ensureWindowState(activeDrag.windowId, WINDOW_DEFAULTS[activeDrag.windowId]);
+  if (dragState.maximized) {
+    return;
+  }
+
+  const windowStack = appRoot.querySelector('.window-stack');
+  const desktopCanvas = appRoot.querySelector('.desktop-canvas');
+  const desktopRect = windowStack?.getBoundingClientRect() ?? desktopCanvas?.getBoundingClientRect() ?? {
+    left: 0,
+    top: 0,
+    width: window.innerWidth,
+    height: window.innerHeight - TASKBAR_HEIGHT,
+  };
+
+  const nextX = event.clientX - desktopRect.left - activeDrag.offsetX;
+  const nextY = event.clientY - desktopRect.top - activeDrag.offsetY;
+  const maxX = Math.max(12, window.innerWidth - desktopRect.left - MIN_VISIBLE_TITLEBAR_WIDTH);
+  const maxY = Math.max(12, window.innerHeight - TASKBAR_HEIGHT - desktopRect.top - MIN_VISIBLE_TITLEBAR_HEIGHT);
+  const position = dragState;
+  position.x = clamp(nextX, 12, maxX);
+  position.y = clamp(nextY, 12, maxY);
 
   const frame = appRoot.querySelector(`[data-window-id="${activeDrag.windowId}"]`);
   if (frame) {
@@ -365,6 +452,13 @@ function startRun(missionId) {
     state,
   };
   appState.selectedMissionId = mission.id;
+  ensureWindowOpen('games-folder');
+  ensureWindowOpen('popup-hell-launcher');
+  ensureWindowOpen('run-hud');
+  ensureWindowOpen('run-workspace');
+  ensureWindowState('games-folder', WINDOW_DEFAULTS['games-folder']).minimized = true;
+  ensureWindowState('popup-hell-launcher', WINDOW_DEFAULTS['popup-hell-launcher']).minimized = true;
+  closeWindow('briefing-window');
   resetStepInputState(appState.stepInput);
 
   track('mission_selected', { missionId });
@@ -458,11 +552,26 @@ function ensureWindowState(windowId, defaults = {}) {
       x: defaults.x ?? 160,
       y: defaults.y ?? 80,
       z,
+      minimized: false,
+      maximized: false,
+      restoreX: null,
+      restoreY: null,
     };
     appState.windowState.nextZ = Math.max(appState.windowState.nextZ, z);
   }
 
   return appState.windowState.positions[windowId];
+}
+
+function ensureWindowOpen(windowId) {
+  if (!appState.windowState.openWindows.includes(windowId)) {
+    appState.windowState.openWindows.push(windowId);
+  }
+  ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]);
+}
+
+function closeWindow(windowId) {
+  appState.windowState.openWindows = appState.windowState.openWindows.filter((entry) => entry !== windowId);
 }
 
 function bringWindowToFront(windowId) {
@@ -471,13 +580,19 @@ function bringWindowToFront(windowId) {
   }
 
   const current = ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]);
+  current.minimized = false;
   appState.windowState.nextZ += 1;
   current.z = appState.windowState.nextZ;
 }
 
 function getWindowStyle(windowId, defaults, extraStyle = '') {
   const position = ensureWindowState(windowId, defaults);
-  return `left:${position.x}px; top:${position.y}px; z-index:${position.z}; ${extraStyle}`;
+  const visibilityStyle = position.minimized ? 'display:none;' : '';
+  const geometryStyle = position.maximized
+    ? 'left:0; top:0; width:calc(100vw - 208px); height:calc(100vh - 134px); max-width:none; max-height:none;'
+    : `left:${position.x}px; top:${position.y}px;`;
+  const sizeStyle = position.maximized ? '' : extraStyle;
+  return `${geometryStyle} z-index:${position.z}; ${visibilityStyle} ${sizeStyle}`;
 }
 
 function clamp(value, min, max) {
@@ -501,45 +616,33 @@ function getResultSummary(runId) {
 }
 
 function getTaskbarWindows() {
-  if (appState.booting) {
-    return [{ id: 'boot-window', label: 'Boot', kind: 'app', code: 'SYS' }];
-  }
+  const byId = {
+    'boot-window': { id: 'boot-window', label: 'Boot', kind: 'app', code: 'SYS' },
+    'landing-welcome': { id: 'landing-welcome', label: 'Welcome', kind: 'app', code: 'SYS' },
+    'landing-preview': { id: 'landing-preview', label: 'Mission Stack', kind: 'doc', code: 'TXT' },
+    'games-folder': { id: 'games-folder', label: 'Games', kind: 'folder', code: 'DIR' },
+    'popup-hell-launcher': { id: 'popup-hell-launcher', label: 'Popup Hell.exe', kind: 'app', code: 'EXE' },
+    'briefing-window': { id: 'briefing-window', label: 'Mission Brief', kind: 'doc', code: 'BRF' },
+    'run-hud': { id: 'run-hud', label: 'Mission HUD', kind: 'app', code: 'HUD' },
+    'run-workspace': {
+      id: 'run-workspace',
+      label: appState.activeRun?.mission?.title ?? 'Mission Workspace',
+      kind: 'app',
+      code: 'RUN',
+    },
+    'result-window': { id: 'result-window', label: 'After Action Report', kind: 'doc', code: 'RPT' },
+    'error-window': { id: 'error-window', label: 'System Notice', kind: 'doc', code: 'ERR' },
+  };
 
-  if (appState.route.page === 'landing') {
-    return [
-      { id: 'landing-welcome', label: 'Welcome', kind: 'app', code: 'SYS', nav: '#/' },
-      { id: 'landing-preview', label: 'Mission Stack', kind: 'doc', code: 'TXT', nav: '#/' },
-    ];
-  }
-
-  if (appState.route.page === 'missions') {
-    return [{ id: 'games-folder', label: 'Games', kind: 'folder', code: 'DIR', nav: '#/missions' }];
-  }
-
-  if (appState.route.page === 'how-to-play') {
-    return [
-      { id: 'games-folder', label: 'Games', kind: 'folder', code: 'DIR', nav: '#/missions' },
-      { id: 'popup-hell-launcher', label: 'Popup Hell.exe', kind: 'app', code: 'EXE', nav: '#/how-to-play' },
-    ];
-  }
-
-  if (appState.route.page === 'run') {
-    if (!appState.activeRun || appState.activeRun.phase === 'briefing') {
-      return [{ id: 'briefing-window', label: 'Mission Brief', kind: 'doc', code: 'BRF', nav: `#/run/${appState.route.missionId}` }];
-    }
-
-    return [
-      { id: 'run-hud', label: 'Mission HUD', kind: 'app', code: 'HUD', nav: `#/run/${appState.route.missionId}` },
-      { id: 'run-workspace', label: appState.activeRun.mission.title, kind: 'app', code: 'RUN', nav: `#/run/${appState.route.missionId}` },
-    ];
-  }
-
-  return [{ id: 'result-window', label: 'After Action Report', kind: 'doc', code: 'RPT', nav: `#/result/${appState.route.runId}` }];
+  const openIds = appState.booting ? ['boot-window'] : appState.windowState.openWindows;
+  return openIds.map((id) => byId[id]).filter(Boolean);
 }
 
 function getActiveWindowId() {
   return getTaskbarWindows()
-    .map((item) => ({ id: item.id, z: ensureWindowState(item.id, WINDOW_DEFAULTS[item.id]).z }))
+    .map((item) => ({ id: item.id, state: ensureWindowState(item.id, WINDOW_DEFAULTS[item.id]) }))
+    .filter((item) => !item.state.minimized)
+    .map((item) => ({ id: item.id, z: item.state.z }))
     .sort((left, right) => right.z - left.z)[0] ?? null;
 }
 
@@ -562,17 +665,7 @@ function render() {
     `
     : '';
 
-  const windows = appState.booting
-    ? renderBoot()
-    : appState.route.page === 'landing'
-      ? renderLanding()
-      : appState.route.page === 'how-to-play'
-        ? renderHowToPlay()
-        : appState.route.page === 'missions'
-          ? renderMissions()
-          : appState.route.page === 'run'
-            ? renderRun()
-            : renderResult();
+  const windows = renderOpenWindows();
 
   appRoot.innerHTML = `
     <div class="os-shell">
@@ -610,6 +703,7 @@ function bindWindowChrome() {
     frame.addEventListener('mousedown', () => {
       bringWindowToFront(windowId);
       frame.style.zIndex = String(ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]).z);
+      frame.style.display = '';
     });
 
     const handle = frame.querySelector('[data-window-drag-handle]');
@@ -633,6 +727,23 @@ function bindWindowChrome() {
       event.preventDefault();
     });
   }
+}
+
+function renderOpenWindows() {
+  const openIds = appState.booting ? ['boot-window'] : appState.windowState.openWindows;
+  return openIds.map((windowId) => renderWindowById(windowId)).filter(Boolean).join('');
+}
+
+function renderWindowById(windowId) {
+  if (windowId === 'boot-window') return renderBoot();
+  if (windowId === 'landing-welcome') return renderLandingWelcomeWindow();
+  if (windowId === 'landing-preview') return renderLandingPreviewWindow();
+  if (windowId === 'games-folder') return renderMissionsWindow();
+  if (windowId === 'popup-hell-launcher') return renderLauncherWindow();
+  if (windowId === 'briefing-window' || windowId === 'run-hud' || windowId === 'run-workspace') return renderRunWindow(windowId);
+  if (windowId === 'result-window') return renderResultWindow();
+  if (windowId === 'error-window') return renderErrorState('SYSTEM NOTICE', '오류 상태가 감지되었습니다.');
+  return '';
 }
 
 function renderDesktopIcons() {
@@ -708,7 +819,6 @@ function renderTaskbar() {
               class="taskbar-button ${item.id === activeId ? 'is-active' : ''}"
               data-action="focus-window"
               data-task-window-id="${item.id}"
-              ${item.nav ? `data-nav="${item.nav}"` : ''}
             >
             ${renderSystemIcon(item.kind, item.code, true)}
             <span>${item.label}</span>
@@ -737,9 +847,11 @@ function renderWindow({
   closeNav = '#/',
   body,
 }) {
+  const state = ensureWindowState(windowId, WINDOW_DEFAULTS[windowId]);
+
   return `
     <section
-      class="desktop-window ${className}"
+      class="desktop-window ${className} ${state.maximized ? 'is-maximized' : ''}"
       data-window-id="${windowId}"
       style="${getWindowStyle(windowId, WINDOW_DEFAULTS[windowId], `width:${width};`)}"
     >
@@ -749,9 +861,9 @@ function renderWindow({
           <strong>${title}</strong>
         </div>
         <div class="window-controls">
-          <button type="button" class="window-control" aria-label="창 최소화">_</button>
-          <button type="button" class="window-control" aria-label="창 최대화">□</button>
-          <button type="button" class="window-control" data-nav="${closeNav}" aria-label="창 닫기">×</button>
+          <button type="button" class="window-control" data-action="minimize-window" data-window-id-target="${windowId}" aria-label="창 최소화">_</button>
+          <button type="button" class="window-control" data-action="toggle-maximize-window" data-window-id-target="${windowId}" aria-label="창 최대화">${state.maximized ? '❐' : '□'}</button>
+          <button type="button" class="window-control" data-action="close-window" data-window-id-target="${windowId}" aria-label="창 닫기">×</button>
         </div>
       </header>
       ${menuItems.length > 0 ? `<div class="window-menubar">${menuItems.map((item) => `<span>${item}</span>`).join('')}</div>` : ''}
@@ -786,7 +898,38 @@ function renderBoot() {
   });
 }
 
-function renderLanding() {
+function renderLandingWelcomeWindow() {
+  return renderWindow({
+    windowId: 'landing-welcome',
+    title: 'SYSTEM_X86 Desktop',
+    kind: 'app',
+    code: 'SYS',
+    width: 'min(740px, calc(100vw - 320px))',
+    closeNav: '#/',
+    className: 'landing-window',
+    body: `
+      <section class="landing-panel">
+        <p class="eyebrow">PC ONLY · 2~3분 세션</p>
+        <h1>모든 팝업을 치우지 마세요.<br />진짜 문제만 해결하세요.</h1>
+        <p class="landing-panel__copy">
+          Error Popup Hell은 가짜 알림과 진짜 방해 요소를 구분하면서 제한 시간 안에 업무형 미션을 끝내는
+          레트로 웹 게임입니다.
+        </p>
+        <div class="landing-actions">
+          <button type="button" class="retro-button primary" data-nav="#/missions">게임 시작</button>
+          <button type="button" class="retro-button secondary" data-nav="#/how-to-play">플레이 방법 보기</button>
+        </div>
+        <ul class="landing-rule-list">
+          <li>진짜 방해 요소를 먼저 해결하지 않으면 핵심 단계가 막힙니다.</li>
+          <li>가짜 팝업에 휘둘리면 시간 손실 또는 스트라이크가 쌓입니다.</li>
+          <li>Games 폴더를 더블클릭하면 실제 윈도우처럼 화면을 열 수 있습니다.</li>
+        </ul>
+      </section>
+    `,
+  });
+}
+
+function renderLandingPreviewWindow() {
   const highlightedMissions = missions.slice(0, 2)
     .map((mission) => `
       <article class="panel-card mission-preview">
@@ -801,66 +944,36 @@ function renderLanding() {
     `)
     .join('');
 
-  return `
-    ${renderWindow({
-      windowId: 'landing-welcome',
-      title: 'SYSTEM_X86 Desktop',
-      kind: 'app',
-      code: 'SYS',
-      width: 'min(740px, calc(100vw - 320px))',
-      closeNav: '#/',
-      className: 'landing-window',
-      body: `
-        <section class="landing-panel">
-          <p class="eyebrow">PC ONLY · 2~3분 세션</p>
-          <h1>모든 팝업을 치우지 마세요.<br />진짜 문제만 해결하세요.</h1>
-          <p class="landing-panel__copy">
-            Error Popup Hell은 가짜 알림과 진짜 방해 요소를 구분하면서 제한 시간 안에 업무형 미션을 끝내는
-            레트로 웹 게임입니다.
-          </p>
-          <div class="landing-actions">
-            <button type="button" class="retro-button primary" data-nav="#/missions">게임 시작</button>
-            <button type="button" class="retro-button secondary" data-nav="#/how-to-play">플레이 방법 보기</button>
-          </div>
-          <ul class="landing-rule-list">
-            <li>진짜 방해 요소를 먼저 해결하지 않으면 핵심 단계가 막힙니다.</li>
-            <li>가짜 팝업에 휘둘리면 시간 손실 또는 스트라이크가 쌓입니다.</li>
-            <li>Games 폴더를 더블클릭하면 실제 윈도우처럼 화면을 열 수 있습니다.</li>
+  return renderWindow({
+    windowId: 'landing-preview',
+    title: 'MISSION STACK',
+    kind: 'doc',
+    code: 'TXT',
+    width: 'min(320px, calc(100vw - 88px))',
+    closeNav: '#/',
+    className: 'landing-sidebar-window',
+    body: `
+      <section class="preview-stack">
+        <article class="info-card">
+          <p class="eyebrow">FAIL STATES</p>
+          <h2>실패 조건</h2>
+          <ul>
+            <li>제한 시간 종료</li>
+            <li>스트라이크 초과</li>
+            <li>필수 진짜 방해 요소 미해결 상태로 마지막 단계 시도</li>
           </ul>
-        </section>
-      `,
-    })}
-    ${renderWindow({
-      windowId: 'landing-preview',
-      title: 'MISSION STACK',
-      kind: 'doc',
-      code: 'TXT',
-      width: 'min(320px, calc(100vw - 88px))',
-      closeNav: '#/',
-      className: 'landing-sidebar-window',
-      body: `
-        <section class="preview-stack">
-          <article class="info-card">
-            <p class="eyebrow">FAIL STATES</p>
-            <h2>실패 조건</h2>
-            <ul>
-              <li>제한 시간 종료</li>
-              <li>스트라이크 초과</li>
-              <li>필수 진짜 방해 요소 미해결 상태로 마지막 단계 시도</li>
-            </ul>
-          </article>
-          <article class="mission-preview-list">
-            <p class="eyebrow">MISSION STACK</p>
-            <h2>대표 미션</h2>
-            ${highlightedMissions}
-          </article>
-        </section>
-      `,
-    })}
-  `;
+        </article>
+        <article class="mission-preview-list">
+          <p class="eyebrow">MISSION STACK</p>
+          <h2>대표 미션</h2>
+          ${highlightedMissions}
+        </article>
+      </section>
+    `,
+  });
 }
 
-function renderHowToPlay() {
+function renderLauncherWindow() {
   const mission = getMissionById(appState.route.missionId) ?? getSelectedMission();
   if (!mission) {
     return renderErrorState('실행할 미션을 찾을 수 없습니다.', 'Games 폴더에서 다시 선택해 주세요.');
@@ -868,88 +981,72 @@ function renderHowToPlay() {
 
   const filledSegments = Math.min(15, 9 + mission.requiredBlockers.length * 2 + (appState.save.tutorialSeen ? 2 : 0));
 
-  return `
-    ${renderMissionsWindow({ closeNav: '#/', showOpenLauncherButton: false })}
-    ${renderWindow({
-      windowId: 'popup-hell-launcher',
-      title: 'Popup Hell - v1.0',
-      kind: 'app',
-      code: 'EXE',
-      width: 'min(760px, calc(100vw - 160px))',
-      className: 'launcher-window',
-      closeNav: '#/missions',
-      bodyClass: 'launcher-body',
-      body: `
-        <div class="launcher-headline">
-          <h1>Popup Hell</h1>
-          <p>Version 1.0.4.2 [RELEASE]</p>
+  return renderWindow({
+    windowId: 'popup-hell-launcher',
+    title: 'Popup Hell - v1.0',
+    kind: 'app',
+    code: 'EXE',
+    width: 'min(760px, calc(100vw - 160px))',
+    className: 'launcher-window',
+    closeNav: '#/missions',
+    bodyClass: 'launcher-body',
+    body: `
+      <div class="launcher-headline">
+        <h1>Popup Hell</h1>
+        <p>Version 1.0.4.2 [RELEASE]</p>
+      </div>
+      <div>
+        <p class="eyebrow">MISSION SELECT</p>
+        <h2>오늘 처리할 업무를 고르세요</h2>
+      </div>
+      <div class="launcher-readme">
+        <p class="eyebrow">README.TXT</p>
+        <div class="launcher-readme__body">
+          <p>
+            Welcome to Popup Hell v1.0.<br /><br />
+            ${mission.title} 미션을 실행합니다. ${mission.brief}<br /><br />
+            WARNING: Prolonged exposure may result in unexpected systemic behavior, localized temporal distortion,
+            and a sudden urge to defragment your hard drive.<br /><br />
+            Hint 01: ${mission.tutorialHints[0]}<br /><br />
+            Hint 02: ${mission.tutorialHints[1]}
+          </p>
         </div>
-        <div>
-          <p class="eyebrow">MISSION SELECT</p>
-          <h2>오늘 처리할 업무를 고르세요</h2>
+      </div>
+      <div class="launcher-mission-picker" aria-label="실행 대상 미션">
+        ${missions.map((entry) => `
+          <button
+            type="button"
+            class="retro-button ${entry.id === mission.id ? 'primary' : 'secondary'}"
+            data-action="select-launcher-mission"
+            data-mission-id="${entry.id}"
+          >
+            ${entry.title}
+          </button>
+        `).join('')}
+      </div>
+      <div class="launcher-progress">
+        <div class="launcher-progress__meta">
+          <span>Loading Assets...</span>
+          <span>${Math.round((filledSegments / 15) * 100)}%</span>
         </div>
-        <div class="launcher-readme">
-          <p class="eyebrow">README.TXT</p>
-          <div class="launcher-readme__body">
-            <p>
-              Welcome to Popup Hell v1.0.<br /><br />
-              ${mission.title} 미션을 실행합니다. ${mission.brief}<br /><br />
-              WARNING: Prolonged exposure may result in unexpected systemic behavior, localized temporal distortion,
-              and a sudden urge to defragment your hard drive.<br /><br />
-              Hint 01: ${mission.tutorialHints[0]}<br /><br />
-              Hint 02: ${mission.tutorialHints[1]}
-            </p>
-          </div>
-        </div>
-        <div class="launcher-mission-picker" aria-label="실행 대상 미션">
-          ${missions.map((entry) => `
-            <button
-              type="button"
-              class="retro-button ${entry.id === mission.id ? 'primary' : 'secondary'}"
-              data-action="select-launcher-mission"
-              data-mission-id="${entry.id}"
-            >
-              ${entry.title}
-            </button>
+        <div class="launcher-progress__bar" aria-hidden="true">
+          ${Array.from({ length: 15 }, (_, index) => `
+            <span class="launcher-progress__segment ${index < filledSegments ? 'is-filled' : ''}"></span>
           `).join('')}
         </div>
-        <div class="launcher-progress">
-          <div class="launcher-progress__meta">
-            <span>Loading Assets...</span>
-            <span>${Math.round((filledSegments / 15) * 100)}%</span>
-          </div>
-          <div class="launcher-progress__bar" aria-hidden="true">
-            ${Array.from({ length: 15 }, (_, index) => `
-              <span class="launcher-progress__segment ${index < filledSegments ? 'is-filled' : ''}"></span>
-            `).join('')}
-          </div>
+      </div>
+      <div class="launcher-footer">
+        <div class="launcher-toggle">
+          <span class="launcher-toggle__box" aria-hidden="true"></span>
+          <span>Run in windowed mode</span>
         </div>
-        <div class="launcher-footer">
-          <div class="launcher-toggle">
-            <span class="launcher-toggle__box" aria-hidden="true"></span>
-            <span>Run in windowed mode</span>
-          </div>
-          <div class="launcher-actions">
-            <button type="button" class="retro-button secondary" data-nav="#/run/${mission.id}">브리핑 보기</button>
-            <button type="button" class="retro-button primary" data-action="launcher-play" data-mission-id="${mission.id}">PLAY</button>
-          </div>
+        <div class="launcher-actions">
+          <button type="button" class="retro-button secondary" data-nav="#/run/${mission.id}">브리핑 보기</button>
+          <button type="button" class="retro-button primary" data-action="launcher-play" data-mission-id="${mission.id}">PLAY</button>
         </div>
-      `,
-    })}
-  `;
-}
-
-function renderMissions() {
-  if (missions.length === 0) {
-    return renderErrorState('준비 중인 미션', '미션 데이터가 아직 로드되지 않았습니다.');
-  }
-
-  const selectedMission = getSelectedMission();
-  if (!selectedMission) {
-    return renderErrorState('미션을 찾을 수 없습니다.', '다시 홈으로 돌아가 주세요.');
-  }
-
-  return renderMissionsWindow();
+      </div>
+    `,
+  });
 }
 
 function renderMissionsWindow(options = {}) {
@@ -1040,13 +1137,13 @@ function renderMissionsWindow(options = {}) {
   });
 }
 
-function renderRun() {
+function renderRunWindow(targetWindowId) {
   const mission = getMissionById(appState.route.missionId);
   if (!mission) {
     return renderErrorState('존재하지 않는 미션입니다.', 'Games 폴더로 돌아가세요.');
   }
 
-  if (!appState.activeRun || appState.activeRun.phase === 'briefing') {
+  if (targetWindowId === 'briefing-window' || !appState.activeRun || appState.activeRun.phase === 'briefing') {
     return renderWindow({
       windowId: 'briefing-window',
       title: `${mission.title} - Mission Brief`,
@@ -1089,8 +1186,8 @@ function renderRun() {
   const currentStep = runState.mission.steps[runState.stepIndex] ?? null;
   const displayPopups = getDisplayPopups(runState.activePopups);
 
-  return `
-    ${renderWindow({
+  if (targetWindowId === 'run-hud') {
+    return renderWindow({
       windowId: 'run-hud',
       title: 'Mission HUD',
       kind: 'app',
@@ -1128,8 +1225,10 @@ function renderRun() {
           </section>
         </section>
       `,
-    })}
-    ${renderWindow({
+    });
+  }
+
+  return renderWindow({
       windowId: 'run-workspace',
       title: currentStep ? currentStep.label : 'WORK DESK',
       kind: 'app',
@@ -1166,11 +1265,10 @@ function renderRun() {
           ${displayPopups.length === 0 ? '<p class="quiet-note">현재 열린 팝업이 없습니다. 체크리스트를 진행하세요.</p>' : ''}
         </section>
       `,
-    })}
-  `;
+    });
 }
 
-function renderResult() {
+function renderResultWindow() {
   const result = getResultSummary(appState.route.runId);
   if (!result) {
     return renderErrorState('결과 기록을 찾을 수 없습니다.', '새 미션을 선택해 다시 플레이하세요.');

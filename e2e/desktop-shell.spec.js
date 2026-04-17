@@ -132,6 +132,9 @@ test.describe('Windows 95 desktop shell', () => {
     await expect(page.locator('.taskbar').getByText('Popup Hell.exe')).toBeVisible();
     await page.locator('[data-window-id="popup-hell-launcher"]').getByRole('button', { name: '브리핑 보기' }).click();
     await page.getByRole('button', { name: '미션 시작' }).click();
+    await expect(page.locator('.taskbar').getByText('Games')).toBeVisible();
+    await expect(page.locator('.taskbar').getByText('Popup Hell.exe')).toBeVisible();
+    await expect(page.locator('.taskbar').getByText('Mission HUD')).toBeVisible();
 
     await page.getByRole('textbox', { name: '새 파일명' }).fill('q3-final-pitch');
     await page.getByRole('button', { name: '단계 완료' }).click();
@@ -154,6 +157,21 @@ test.describe('Windows 95 desktop shell', () => {
     await expect(page.getByRole('heading', { name: '업무 완료!' })).toBeVisible();
   });
 
+  test('minimizes to the taskbar and restores from the taskbar button', async ({ page }) => {
+    await page.goto('/');
+
+    const popupHellWindow = await openLauncherFromDesktop(page);
+    const popupTaskButton = page.locator('.taskbar .taskbar-button').filter({ hasText: 'Popup Hell.exe' }).first();
+
+    await expect(popupTaskButton).toBeVisible();
+    await popupHellWindow.getByRole('button', { name: '창 최소화' }).click();
+    await expect(popupHellWindow).toBeHidden();
+    await expect(popupTaskButton).toBeVisible();
+
+    await popupTaskButton.click();
+    await expect(popupHellWindow).toBeVisible();
+  });
+
   test('supports dragging the active window without overflowing the viewport', async ({ page }) => {
     await page.goto('/');
 
@@ -168,14 +186,20 @@ test.describe('Windows 95 desktop shell', () => {
     const handleBox = await dragHandle.boundingBox();
     expect(handleBox).not.toBeNull();
 
-    await page.mouse.move((handleBox?.x ?? 0) + 32, (handleBox?.y ?? 0) + 12);
+    await page.mouse.move((handleBox?.x ?? 0) + 44, (handleBox?.y ?? 0) + 16);
     await page.mouse.down();
-    await page.mouse.move((before?.x ?? 0) + 180, (before?.y ?? 0) + 120, { steps: 12 });
+    await page.mouse.move((before?.x ?? 0) + 124, (before?.y ?? 0) + 64, { steps: 12 });
     await page.mouse.up();
 
     const after = await popupHellWindow.boundingBox();
     expect(after).not.toBeNull();
     expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0)) + Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeGreaterThan(20);
+    const endOffsetX = ((handleBox?.x ?? 0) + 44 + 80) - (after?.x ?? 0);
+    const endOffsetY = ((handleBox?.y ?? 0) + 16 + 48) - (after?.y ?? 0);
+    const startOffsetX = ((handleBox?.x ?? 0) + 44) - (before?.x ?? 0);
+    const startOffsetY = ((handleBox?.y ?? 0) + 16) - (before?.y ?? 0);
+    expect(Math.abs(endOffsetX - startOffsetX)).toBeLessThanOrEqual(4);
+    expect(Math.abs(endOffsetY - startOffsetY)).toBeLessThanOrEqual(4);
 
     const metrics = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
