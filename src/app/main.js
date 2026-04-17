@@ -2,10 +2,21 @@ import { missions, getMissionById } from '../data/missions/index.js';
 import { track } from '../lib/analytics.js';
 import { loadSave, saveRunSummary, markTutorialSeen } from '../lib/storage.js';
 import { createRunState, tickRun, attemptStep, resolvePopupAction } from '../features/gameplay/engine.js';
+import {
+  captureActiveStepInput,
+  createStepInputState,
+  getStepInputKey,
+  isStepInputElement,
+  readStepInputDraft,
+  resetStepInputState,
+  restoreActiveStepInput,
+  updateStepInputDraft,
+} from './stepInputState.js';
 
 const appRoot = document.querySelector('#app');
 const MIN_WIDTH = 1280;
 const MIN_HEIGHT = 720;
+const TICK_INTERVAL_MS = 1000;
 
 const appState = {
   booting: true,
@@ -13,6 +24,7 @@ const appState = {
   save: loadSave(),
   activeRun: null,
   lastResult: null,
+  stepInput: createStepInputState(),
 };
 
 let tickerHandle = null;
@@ -31,6 +43,7 @@ window.addEventListener('hashchange', () => {
 window.addEventListener('resize', render);
 window.addEventListener('keydown', handleGlobalKeydown);
 appRoot.addEventListener('click', handleClick);
+appRoot.addEventListener('input', handleInput);
 appRoot.addEventListener('submit', handleSubmit);
 
 syncRouteState();
@@ -81,6 +94,10 @@ function syncRouteState() {
 
   if (appState.route.page === 'result' && appState.activeRun) {
     appState.activeRun.phase = 'result';
+  }
+
+  if (appState.route.page !== 'run') {
+    resetStepInputState(appState.stepInput);
   }
 }
 
@@ -144,6 +161,15 @@ function handleSubmit(event) {
   onAttemptStep({ value, confirmed: true });
 }
 
+function handleInput(event) {
+  if (!isStepInputElement(event.target)) {
+    return;
+  }
+
+  const key = event.target.dataset.stepKey || null;
+  updateStepInputDraft(appState.stepInput, key, event.target.value);
+}
+
 function startRun(missionId) {
   const mission = getMissionById(missionId);
   if (!mission) {
@@ -157,6 +183,7 @@ function startRun(missionId) {
     phase: 'running',
     state,
   };
+  resetStepInputState(appState.stepInput);
 
   track('mission_selected', { missionId });
   track('run_started', { missionId, runId: state.runId });
@@ -184,7 +211,7 @@ function startTicker() {
     }
 
     render();
-  }, 250);
+  }, TICK_INTERVAL_MS);
 }
 
 function stopTicker() {
@@ -201,6 +228,7 @@ function finalizeCurrentRun() {
     return;
   }
 
+  resetStepInputState(appState.stepInput);
   appState.save = saveRunSummary(runState.scoreSummary);
   appState.lastResult = runState.scoreSummary;
   track(runState.status === 'won' ? 'mission_cleared' : 'mission_failed', {
@@ -254,6 +282,8 @@ function getResultSummary(runId) {
 }
 
 function render() {
+  captureActiveStepInput(appRoot, appState.stepInput);
+
   const viewportNotice = !isDesktopReady()
     ? `
       <aside class="resolution-warning" role="status" aria-live="polite">
@@ -296,6 +326,8 @@ function render() {
       </footer>
     </div>
   `;
+
+  restoreActiveStepInput(appRoot, appState.stepInput);
 }
 
 function renderBoot() {
@@ -502,12 +534,14 @@ function renderRun() {
 
   const runState = appState.activeRun.state;
   const currentStep = runState.mission.steps[runState.stepIndex] ?? null;
+  const displayPopups = getDisplayPopups(runState.activePopups);
 
   return `
     <section class="run-layout">
       <aside class="window-frame hud-panel" data-window-title="RUN HUD">
         <p class="eyebrow">LIVE HUD</p>
         <h2>${runState.mission.title}</h2>
+        <p class="run-meta">${difficultyLabel(runState.mission.difficulty)} · 예상 ${runState.mission.estimatedMinutes}분 · ${Math.min(runState.stepIndex + 1, runState.mission.steps.length)} / ${runState.mission.steps.length} 단계</p>
         <dl class="hud-stats">
           <div><dt>남은 시간</dt><dd>${formatTime(runState.remainingMs)}</dd></div>
           <div><dt>스트라이크</dt><dd>${runState.strikes} / ${runState.mission.allowedStrikes}</dd></div>
@@ -536,13 +570,14 @@ function renderRun() {
             <p class="eyebrow">CURRENT TASK</p>
             <h2>${currentStep ? currentStep.label : '미션 판정 중'}</h2>
           </div>
+          <p class="progress-pill">${Math.min(runState.stepIndex + 1, runState.mission.steps.length)} / ${runState.mission.steps.length} STEP</p>
           <button type="button" class="retro-button" data-nav="#/missions">미션 중단</button>
         </div>
         <div class="desk-panel">
           <article class="panel-card current-step" data-window-title="ACTIVE STEP">
             <h3>다음 행동</h3>
             <p>${currentStep ? currentStep.instruction : '모든 단계를 완료했습니다.'}</p>
-            ${currentStep ? renderStepAction(currentStep) : ''}
+            ${currentStep ? renderStepAction(runState, currentStep) : ''}
           </article>
           <article class="panel-card mission-notes" data-window-title="FIELD NOTES">
             <h3>미션 힌트</h3>
@@ -552,8 +587,9 @@ function renderRun() {
           </article>
         </div>
         <section class="popup-layer" aria-label="현재 팝업">
-          ${runState.activePopups.map((popup, index) => renderPopup(popup, index)).join('')}
-          ${runState.activePopups.length === 0 ? '<p class="quiet-note">현재 열린 팝업이 없습니다. 체크리스트를 진행하세요.</p>' : ''}
+          ${renderWorkspaceBackdrop(runState, currentStep)}
+          ${displayPopups.map((popup, index) => renderPopup(popup, index, displayPopups.length)).join('')}
+          ${displayPopups.length === 0 ? '<p class="quiet-note">현재 열린 팝업이 없습니다. 체크리스트를 진행하세요.</p>' : ''}
         </section>
       </section>
     </section>
@@ -612,13 +648,25 @@ function renderErrorState(title, body) {
   `;
 }
 
-function renderStepAction(step) {
+function renderStepAction(runState, step) {
   if (step.actionType === 'input') {
+    const stepKey = getStepInputKey(runState, step);
+    const draftValue = escapeHtmlAttribute(readStepInputDraft(appState.stepInput, stepKey));
+
     return `
       <form class="step-form" data-step-form>
         <label>
           <span>${step.inputLabel}</span>
-          <input name="step-input" type="text" placeholder="${step.placeholder}" autocomplete="off" required />
+          <input
+            data-step-input
+            data-step-key="${stepKey}"
+            name="step-input"
+            type="text"
+            placeholder="${escapeHtmlAttribute(step.placeholder)}"
+            value="${draftValue}"
+            autocomplete="off"
+            required
+          />
         </label>
         <button type="submit" class="retro-button primary">단계 완료</button>
       </form>
@@ -630,19 +678,30 @@ function renderStepAction(step) {
   `;
 }
 
-function renderPopup(popup, index) {
-  const offsetX = 24 + (index % 3) * 42;
-  const offsetY = 18 + index * 26;
+function renderPopup(popup, index, total) {
+  const isPriorityPopup = index === total - 1;
+  const offsetX = popup.truthClass === 'real'
+    ? 28 + index * 8
+    : 74 + index * 24;
+  const offsetY = popup.truthClass === 'real'
+    ? 22 + index * 10
+    : 40 + index * 18;
+  const stackDepth = index + 2;
   const severityLabel = popup.severity === 'high' ? '긴급' : popup.severity === 'medium' ? '주의' : '참고';
+  const badgeLabel = popup.severity === 'high' ? '긴급 확인' : popup.severity === 'medium' ? '주의 확인' : '참고 창';
 
   return `
-    <article class="popup-card ${popup.severity}" data-window-title="${severityLabel} // ${popup.truthClass === 'real' ? 'REAL' : 'FAKE'}" style="--offset-x:${offsetX}px; --offset-y:${offsetY}px;">
+    <article
+      class="popup-card ${popup.severity} ${popup.truthClass === 'real' ? 'is-blocker' : 'is-noise'} ${isPriorityPopup ? 'is-priority' : ''}"
+      data-window-title="${severityLabel} // WORK ALERT"
+      style="--offset-x:${offsetX}px; --offset-y:${offsetY}px; --popup-z:${stackDepth};"
+    >
       <header>
         <div>
           <p class="eyebrow">${severityLabel}</p>
           <h3>${popup.title}</h3>
         </div>
-        <span class="popup-kind">${popup.truthClass === 'real' ? '진짜 의심' : '잡음'}</span>
+        <span class="popup-kind">${badgeLabel}</span>
       </header>
       <p>${popup.body}</p>
       <div class="popup-actions">
@@ -680,4 +739,93 @@ function difficultyLabel(level) {
   if (level === 'easy') return '쉬움';
   if (level === 'normal') return '보통';
   return '어려움';
+}
+
+function getDisplayPopups(popups) {
+  return [...popups]
+    .map((popup, index) => ({ ...popup, _displayPriority: getPopupDisplayPriority(popup, index) }))
+    .sort((left, right) => left._displayPriority - right._displayPriority);
+}
+
+function getPopupDisplayPriority(popup, index) {
+  const truthPriority = popup.truthClass === 'real' ? 100 : 0;
+  const severityPriority = popup.severity === 'high' ? 30 : popup.severity === 'medium' ? 20 : 10;
+  return truthPriority + severityPriority + index;
+}
+
+function renderWorkspaceBackdrop(runState, currentStep) {
+  const completedSteps = new Set(runState.completedStepIds);
+  const resolvedPopups = new Set(runState.resolvedPopupIds);
+  const openAlertCount = runState.activePopups.length;
+  const resolvedAlertCount = runState.resolvedPopupIds.length;
+
+  if (runState.mission.id === 'office-mail-001') {
+    const attachmentStatus = completedSteps.has('attach-deck')
+      ? 'Q3_Final_Pitch_v7 첨부됨'
+      : resolvedPopups.has('storage-quota')
+        ? '첨부 가능 상태'
+        : '첨부 전 저장소 점검 필요';
+    const ccStatus = completedSteps.has('cc-ops') ? 'ops@retro.company 입력됨' : '운영팀 참조 대기';
+    const footerStatus = resolvedPopups.has('legal-footer') ? '법무 문구 적용됨' : '발송 전 법무 문구 확인 필요';
+
+    return `
+      <div class="workspace-backdrop">
+        <article class="panel-card ambient-card" data-window-title="MAIL DRAFT">
+          <h3>메일 초안</h3>
+          <dl class="ambient-stats">
+            <div><dt>받는 사람</dt><dd>ceo@retro.company</dd></div>
+            <div><dt>참조</dt><dd>${ccStatus}</dd></div>
+            <div><dt>첨부</dt><dd>${attachmentStatus}</dd></div>
+            <div><dt>발송 게이트</dt><dd>${footerStatus}</dd></div>
+          </dl>
+        </article>
+        <article class="panel-card ambient-card" data-window-title="OFFICE TRAFFIC">
+          <h3>업무 소음 채널</h3>
+          <dl class="ambient-stats">
+            <div><dt>현재 단계</dt><dd>${currentStep?.label ?? '대기 중'}</dd></div>
+            <div><dt>열린 알림</dt><dd>${openAlertCount}건</dd></div>
+            <div><dt>처리한 경고</dt><dd>${resolvedAlertCount}건</dd></div>
+            <div><dt>집중 상태</dt><dd>${runState.chaosPercent < 35 ? '안정적' : runState.chaosPercent < 65 ? '흔들림' : '혼잡'}</dd></div>
+          </dl>
+        </article>
+      </div>
+    `;
+  }
+
+  const stagingStatus = completedSteps.has('stage-files') ? '핫픽스 스테이징 완료' : '핫픽스 파일 대기';
+  const releaseStatus = completedSteps.has('request-release') ? '#release-bridge 승인 요청 완료' : '승인 채널 입력 전';
+  const ciGateStatus = resolvedPopups.has('deploy-freeze') ? '동결 해제 승인 확보' : '배포 차단기 대기';
+  const sshStatus = resolvedPopups.has('ssh-token') ? 'SSH 토큰 갱신됨' : '원격 접근 토큰 점검 필요';
+
+  return `
+    <div class="workspace-backdrop">
+      <article class="panel-card ambient-card" data-window-title="RELEASE BOARD">
+        <h3>배포 상황판</h3>
+        <dl class="ambient-stats">
+          <div><dt>브랜치</dt><dd>hotfix/payment-race</dd></div>
+          <div><dt>스테이징</dt><dd>${stagingStatus}</dd></div>
+          <div><dt>승인 채널</dt><dd>${releaseStatus}</dd></div>
+          <div><dt>CI 게이트</dt><dd>${ciGateStatus}</dd></div>
+        </dl>
+      </article>
+      <article class="panel-card ambient-card" data-window-title="TERMINAL FEED">
+        <h3>터미널 피드</h3>
+        <dl class="ambient-stats">
+          <div><dt>SSH</dt><dd>${sshStatus}</dd></div>
+          <div><dt>현재 단계</dt><dd>${currentStep?.label ?? '대기 중'}</dd></div>
+          <div><dt>열린 알림</dt><dd>${openAlertCount}건</dd></div>
+          <div><dt>처리한 경고</dt><dd>${resolvedAlertCount}건</dd></div>
+        </dl>
+      </article>
+    </div>
+  `;
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
