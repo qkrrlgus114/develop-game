@@ -44,7 +44,7 @@ test.describe('Error Popup Hell desktop flow', () => {
 
     await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 데스크톱 UI 구현 5년\n강점: 빠른 커뮤니케이션');
     await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
-    await page.getByRole('button', { name: '문서/긴급제출' }).click();
+    await page.getByRole('button', { name: '문서/긴급제출', exact: true }).click();
     await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
     await page.getByRole('button', { name: '저장 완료' }).click();
 
@@ -72,5 +72,45 @@ test.describe('Error Popup Hell desktop flow', () => {
     await expect(page).toHaveURL(/#\/result\//);
     await expect(page.getByRole('heading', { name: '업무 완료!' })).toBeVisible();
     await expect(page.getByRole('button', { name: '같은 미션 다시 하기' })).toBeVisible();
+  });
+
+  test('office mission requires keyword-rich memo content before save', async ({ page }) => {
+    await page.goto('/#/missions');
+    await page.getByRole('button', { name: '브리핑 보기' }).first().click();
+    await page.getByRole('button', { name: '미션 시작' }).click();
+
+    await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: UI 구현');
+    await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
+    await page.getByRole('button', { name: '문서/긴급제출', exact: true }).click();
+    await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
+    await page.getByRole('button', { name: '저장 완료' }).click();
+
+    await expect(page.getByText(/키워드가 모두 들어가야 합니다/)).toBeVisible();
+  });
+
+  test('office mission penalizes wrong attachment choice from decoy folders/files', async ({ page }) => {
+    await page.goto('/#/missions');
+    await page.clock.install();
+    await page.getByRole('button', { name: '브리핑 보기' }).first().click();
+    await page.getByRole('button', { name: '미션 시작' }).click();
+
+    await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 프론트엔드 5년\n강점: 운영 협업');
+    await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
+    await page.getByRole('button', { name: '문서/긴급제출', exact: true }).click();
+    await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
+    await page.getByRole('button', { name: '저장 완료' }).click();
+    await page.getByRole('button', { name: '메일 작성하기' }).click();
+    await page.getByRole('textbox', { name: '메일 제목' }).fill('[긴급 제출] 박기현_이력서 전달드립니다');
+    await page.getByRole('button', { name: '제목 입력 완료' }).click();
+
+    await page.clock.fastForward('00:13');
+    await page.getByRole('button', { name: '임시 폴더 정리' }).click();
+
+    await page.getByRole('button', { name: '파일 업로드' }).click();
+    await page.getByRole('button', { name: '문서/긴급제출_백업' }).click();
+    await page.getByRole('button', { name: '박기현_이역서.txt' }).click();
+    await page.getByRole('button', { name: '첨부 완료' }).click();
+
+    await expect(page.getByText(/동명이인 파일 또는 잘못된 폴더/)).toBeVisible();
   });
 });

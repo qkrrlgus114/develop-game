@@ -7,7 +7,7 @@ test('office mission subject input persists and submits', async ({ page }) => {
 
   await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 프론트엔드 5년');
   await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
-  await page.getByRole('button', { name: '문서/긴급제출' }).click();
+  await page.getByRole('button', { name: '문서/긴급제출', exact: true }).click();
   await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
   await page.getByRole('button', { name: '저장 완료' }).click();
   await page.getByRole('button', { name: '메일 작성하기' }).click();

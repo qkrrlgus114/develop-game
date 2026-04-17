@@ -21,6 +21,7 @@ export const missions = [
       requiredFolder: '문서/긴급제출',
       requiredSubject: '[긴급 제출] 박기현_이력서 전달드립니다',
       requiredCc: 'ops@retro.company',
+      noteRequiredKeywords: ['박기현', '프론트엔드', '협업'],
       notePlaceholder: '예) 이름: 박기현\\n경력 요약: 웹 프론트엔드 5년\\n핵심 경험: 데스크톱 UI 구현, 운영 협업\\n비고: 오늘 바로 검토 가능',
       emailBody: '안녕하세요.\\n\\n요청하신 박기현 이력서를 첨부드립니다.\\n검토 부탁드립니다.\\n\\n감사합니다.',
       fakeFiles: [
@@ -32,9 +33,33 @@ export const missions = [
       saveFolders: [
         '바탕화면',
         '다운로드',
+        '문서/긴급제출_백업',
+        '문서/긴급제출-임시',
         '문서/긴급제출',
         '문서/참고자료',
       ],
+      attachmentFolders: [
+        '문서/긴급제출_백업',
+        '문서/긴급제출-임시',
+        '문서/긴급제출',
+      ],
+      attachmentFolderFiles: {
+        '문서/긴급제출_백업': [
+          '박기현_이력서_백업.txt',
+          '박기현_이역서.txt',
+          '박기헌_이력서.txt',
+        ],
+        '문서/긴급제출-임시': [
+          '박기현_이력셔.txt',
+          '박기현_이력서(최종).txt',
+          '박기현_이력서_draft.txt',
+        ],
+        '문서/긴급제출': [
+          '박기현_이력서.txt',
+          '박기현_이역서.txt',
+          '박기헌_이력서.txt',
+        ],
+      },
     },
     steps: [
       {
@@ -129,6 +154,20 @@ export const missions = [
         requiredResponse: 'dismiss',
         resolveLabel: '건너뛰기',
         wrongLabel: '스타일 적용',
+        timeoutBehavior: 'none',
+        wrongActionPenalty: 'time-loss',
+      },
+      {
+        id: 'mail-priority-hint',
+        truthClass: 'fake',
+        title: '중요도 자동 설정 추천',
+        body: '메일 중요도를 자동으로 높일 수 있지만, 오늘 필요한 건 정확한 첨부와 참조 설정입니다.',
+        severity: 'low',
+        trigger: 'time',
+        atSecond: 28,
+        requiredResponse: 'dismiss',
+        resolveLabel: '지금은 건너뛰기',
+        wrongLabel: '중요도 높이기',
         timeoutBehavior: 'none',
         wrongActionPenalty: 'time-loss',
       },

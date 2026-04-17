@@ -188,7 +188,9 @@ export function attemptStep(state, submission = {}) {
   const didSucceed =
     currentStep.actionType === 'input'
       ? normalizedValue === expectedValue
-      : Boolean(submission.confirmed);
+      : submission.valid === false
+        ? false
+        : Boolean(submission.confirmed);
 
   if (!didSucceed) {
     nextState.wrongActions += 1;

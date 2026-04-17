@@ -97,10 +97,12 @@ function createOfficeMailUiState() {
     selectedFolder: '문서/긴급제출',
     fileName: '',
     savedFileName: '',
+    savedFolder: '',
     mailComposerOpen: false,
     subject: '',
     selectedAttachment: '',
     attachmentPickerOpen: false,
+    selectedAttachmentFolder: '문서/긴급제출_백업',
     ccAddress: '',
     statusMessage: '',
   };
@@ -363,6 +365,13 @@ function handleClick(event) {
     return;
   }
 
+  if (action === 'select-attachment-folder' && target.dataset.folderName) {
+    appState.officeMailUi.selectedAttachmentFolder = target.dataset.folderName;
+    appState.officeMailUi.selectedAttachment = '';
+    render();
+    return;
+  }
+
   if (action === 'save-note-as') {
     const scenario = getOfficeMailScenario();
     if (!scenario) {
@@ -376,19 +385,26 @@ function handleClick(event) {
       return;
     }
 
+    if (!officeMailNoteHasRequiredKeywords(noteContent)) {
+      appState.officeMailUi.statusMessage = `메모에는 ${scenario.noteRequiredKeywords.join(', ')} 키워드가 모두 들어가야 합니다.`;
+      onAttemptStep({ confirmed: true, valid: false });
+      return;
+    }
+
     if (appState.officeMailUi.selectedFolder !== scenario.requiredFolder) {
       appState.officeMailUi.statusMessage = `${scenario.requiredFolder} 폴더에 저장해야 합니다.`;
-      render();
+      onAttemptStep({ confirmed: true, valid: false });
       return;
     }
 
     if (appState.officeMailUi.fileName.trim() !== scenario.requiredFileName) {
       appState.officeMailUi.statusMessage = `파일명은 ${scenario.requiredFileName} 이어야 합니다.`;
-      render();
+      onAttemptStep({ confirmed: true, valid: false });
       return;
     }
 
     appState.officeMailUi.savedFileName = scenario.requiredFileName;
+    appState.officeMailUi.savedFolder = scenario.requiredFolder;
     appState.officeMailUi.saveDialogOpen = false;
     appState.officeMailUi.statusMessage = `${scenario.requiredFolder} 폴더에 ${scenario.requiredFileName} 저장 완료`;
     onAttemptStep({ confirmed: true });
@@ -419,9 +435,16 @@ function handleClick(event) {
       return;
     }
 
-    if (appState.officeMailUi.selectedAttachment !== scenario.requiredFileName) {
-      appState.officeMailUi.statusMessage = `${scenario.requiredFileName} 파일을 정확히 선택해야 합니다.`;
+    if (currentStepId() !== 'attach-resume') {
+      appState.officeMailUi.attachmentPickerOpen = false;
+      appState.officeMailUi.statusMessage = `${appState.officeMailUi.selectedAttachment || '선택된 파일 없음'} 후보를 미리 확인했습니다.`;
       render();
+      return;
+    }
+
+    if (!isOfficeMailAttachmentValid()) {
+      appState.officeMailUi.statusMessage = `동명이인 파일 또는 잘못된 폴더를 선택했습니다. ${scenario.requiredFolder}의 ${scenario.requiredFileName} 파일만 첨부할 수 있습니다.`;
+      onAttemptStep({ confirmed: true, valid: false });
       return;
     }
 
@@ -450,6 +473,15 @@ function handleClick(event) {
 
   if (action === 'step-click') {
     event.preventDefault();
+    if (currentStepId() === 'send-mail') {
+      const sendReady = isOfficeMailSubjectValid() && isOfficeMailAttachmentValid() && isOfficeMailCcValid();
+      if (!sendReady) {
+        appState.officeMailUi.statusMessage = '제목, 정확한 첨부 파일, CC 주소를 모두 확인한 뒤 발송해야 합니다.';
+      }
+      onAttemptStep({ confirmed: true, valid: sendReady });
+      return;
+    }
+
     onAttemptStep({ confirmed: true });
     return;
   }
@@ -526,6 +558,9 @@ function handleSubmit(event) {
   const officeSubjectForm = event.target.closest('[data-office-subject-form]');
   if (officeSubjectForm) {
     event.preventDefault();
+    if (!isOfficeMailSubjectValid()) {
+      appState.officeMailUi.statusMessage = '제목은 고정 가이드를 그대로 따라 입력해야 합니다.';
+    }
     onAttemptStep({ value: appState.officeMailUi.subject, confirmed: true });
     return;
   }
@@ -533,6 +568,9 @@ function handleSubmit(event) {
   const officeCcForm = event.target.closest('[data-office-cc-form]');
   if (officeCcForm) {
     event.preventDefault();
+    if (!isOfficeMailCcValid()) {
+      appState.officeMailUi.statusMessage = 'CC는 ops@retro.company 주소로 정확히 입력해야 합니다.';
+    }
     onAttemptStep({ value: appState.officeMailUi.ccAddress, confirmed: true });
     return;
   }
@@ -747,6 +785,10 @@ function getSelectedMission() {
   return getMissionById(appState.selectedMissionId) ?? missions[0] ?? null;
 }
 
+function currentStepId() {
+  return appState.activeRun?.state?.mission?.steps?.[appState.activeRun.state.stepIndex]?.id ?? null;
+}
+
 function getOfficeMailScenario() {
   return getSelectedMission()?.officeMailScenario ?? null;
 }
@@ -757,7 +799,33 @@ function getOfficeAttachmentChoices() {
     return [];
   }
 
-  return [scenario.requiredFileName, ...scenario.fakeFiles];
+  return scenario.attachmentFolderFiles?.[appState.officeMailUi.selectedAttachmentFolder] ?? [];
+}
+
+function officeMailNoteHasRequiredKeywords(noteContent) {
+  const scenario = getOfficeMailScenario();
+  if (!scenario) {
+    return true;
+  }
+
+  return scenario.noteRequiredKeywords.every((keyword) => noteContent.includes(keyword));
+}
+
+function isOfficeMailSubjectValid() {
+  const scenario = getOfficeMailScenario();
+  return Boolean(scenario) && appState.officeMailUi.subject.trim() === scenario.requiredSubject;
+}
+
+function isOfficeMailAttachmentValid() {
+  const scenario = getOfficeMailScenario();
+  return Boolean(scenario)
+    && appState.officeMailUi.selectedAttachmentFolder === scenario.requiredFolder
+    && appState.officeMailUi.selectedAttachment === scenario.requiredFileName;
+}
+
+function isOfficeMailCcValid() {
+  const scenario = getOfficeMailScenario();
+  return Boolean(scenario) && appState.officeMailUi.ccAddress.trim() === scenario.requiredCc;
 }
 
 function getResultSummary(runId) {
@@ -1446,8 +1514,10 @@ function renderOfficeMailWorkspace(runState, currentStep) {
   const subjectGuide = `제목은 정확히 ${scenario.requiredSubject}`;
   const ccGuide = `참조(CC)는 ${scenario.requiredCc}`;
   const attachGuide = `${scenario.requiredFileName} 파일을 선택해야 합니다.`;
-  const savedLabel = ui.savedFileName ? `${scenario.requiredFolder}/${ui.savedFileName}` : '아직 저장된 파일이 없습니다.';
+  const keywordGuide = `메모에는 ${scenario.noteRequiredKeywords.join(', ')} 키워드가 모두 들어가야 합니다.`;
+  const savedLabel = ui.savedFileName ? `${ui.savedFolder}/${ui.savedFileName}` : '아직 저장된 파일이 없습니다.';
   const attachedLabel = ui.selectedAttachment || '아직 첨부된 파일이 없습니다.';
+  const composerReady = ui.mailComposerOpen || runState.completedStepIds.includes('compose-mail-subject');
 
   return `
     <div class="workspace-top">
@@ -1470,13 +1540,14 @@ function renderOfficeMailWorkspace(runState, currentStep) {
               data-office-field="note-content"
               placeholder="${escapeHtmlAttribute(scenario.notePlaceholder)}"
             >${escapeHtmlAttribute(ui.noteContent)}</textarea>
+            <p class="office-inline-guide">${keywordGuide}</p>
             <div class="workspace-actions">
               <button type="button" class="retro-button secondary" data-action="open-save-dialog">다른 이름으로 저장</button>
             </div>
           </div>
         </article>
 
-        <article class="office-window panel-card office-mail-composer ${ui.mailComposerOpen || runState.completedStepIds.includes('compose-mail-subject') ? '' : 'is-muted'}">
+        <article class="office-window panel-card office-mail-composer ${composerReady ? '' : 'is-muted'}">
           <div class="office-window__titlebar">
             <span>MAIL COMPOSER</span>
             <span>MSG</span>
@@ -1487,7 +1558,7 @@ function renderOfficeMailWorkspace(runState, currentStep) {
               <div><dt>참조</dt><dd>${ui.ccAddress || scenario.requiredCc}</dd></div>
               <div><dt>첨부</dt><dd>${ui.savedFileName ? attachedLabel : '저장된 파일 필요'}</dd></div>
             </div>
-            ${!ui.mailComposerOpen && !runState.completedStepIds.includes('compose-mail-subject')
+            ${!composerReady
               ? `<div class="workspace-actions"><button type="button" class="retro-button primary" data-action="open-mail-compose">메일 작성하기</button></div>`
               : `
                 <form class="office-form" data-office-subject-form>
@@ -1509,14 +1580,38 @@ function renderOfficeMailWorkspace(runState, currentStep) {
                     <button type="submit" class="retro-button primary">제목 입력 완료</button>
                   </div>
                 </form>
+                <div class="workspace-actions office-secondary-actions">
+                  <button type="button" class="retro-button secondary" data-action="open-attachment-picker">파일 업로드</button>
+                </div>
               `}
-            ${currentStep?.id === 'attach-resume' ? `
-              <div class="workspace-actions">
-                <button type="button" class="retro-button primary" data-action="open-attachment-picker">파일 업로드</button>
-              </div>
-            ` : ''}
           </div>
         </article>
+
+        ${composerReady ? `
+          <article class="office-window panel-card office-cc-panel">
+            <div class="office-window__titlebar">
+              <span>CC ENTRY</span>
+              <span>ADDR</span>
+            </div>
+            <div class="office-window__body">
+              <form class="office-form" data-office-cc-form>
+                <label>
+                  <span>CC 주소</span>
+                  <input
+                    data-office-field="cc-address"
+                    type="text"
+                    placeholder="${escapeHtmlAttribute(scenario.requiredCc)}"
+                    value="${escapeHtmlAttribute(ui.ccAddress)}"
+                    autocomplete="off"
+                  />
+                </label>
+                <div class="workspace-actions">
+                  <button type="submit" class="retro-button primary">참조 추가 완료</button>
+                </div>
+              </form>
+            </div>
+          </article>
+        ` : ''}
       </section>
 
       <aside class="office-sidebar">
@@ -1527,6 +1622,7 @@ function renderOfficeMailWorkspace(runState, currentStep) {
             <li>${subjectGuide}</li>
             <li>${attachGuide}</li>
             <li>${ccGuide}</li>
+            <li>${keywordGuide}</li>
           </ul>
           <p class="office-guide__status">${ui.statusMessage || runState.lastFeedback}</p>
         </article>
@@ -1587,6 +1683,18 @@ function renderOfficeMailWorkspace(runState, currentStep) {
         </div>
         <div class="office-window__body">
           <p class="eyebrow">첨부 파일 선택</p>
+          <div class="folder-choice-list">
+            ${scenario.attachmentFolders.map((folder) => `
+              <button
+                type="button"
+                class="retro-button ${ui.selectedAttachmentFolder === folder ? 'primary' : 'secondary'}"
+                data-action="select-attachment-folder"
+                data-folder-name="${folder}"
+              >
+                ${folder}
+              </button>
+            `).join('')}
+          </div>
           <div class="file-choice-list">
             ${getOfficeAttachmentChoices().map((fileName) => `
               <button
@@ -1602,32 +1710,6 @@ function renderOfficeMailWorkspace(runState, currentStep) {
           <div class="workspace-actions">
             <button type="button" class="retro-button primary" data-action="confirm-attachment">첨부 완료</button>
           </div>
-        </div>
-      </section>
-    ` : ''}
-
-    ${currentStep?.id === 'cc-ops' ? `
-      <section class="floating-dialog office-cc-dialog">
-        <div class="office-window__titlebar">
-          <span>CC ENTRY</span>
-          <span>ADDR</span>
-        </div>
-        <div class="office-window__body">
-          <form class="office-form" data-office-cc-form>
-            <label>
-              <span>CC 주소</span>
-              <input
-                data-office-field="cc-address"
-                type="text"
-                placeholder="${escapeHtmlAttribute(scenario.requiredCc)}"
-                value="${escapeHtmlAttribute(ui.ccAddress)}"
-                autocomplete="off"
-              />
-            </label>
-            <div class="workspace-actions">
-              <button type="submit" class="retro-button primary">참조 추가 완료</button>
-            </div>
-          </form>
         </div>
       </section>
     ` : ''}

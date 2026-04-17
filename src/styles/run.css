@@ -313,6 +313,12 @@ textarea {
   font-weight: 700;
 }
 
+.office-inline-guide {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #244140;
+}
+
 .floating-dialog {
   position: absolute;
   right: 28px;
@@ -349,6 +355,10 @@ textarea {
 .office-send-action {
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+.office-secondary-actions {
+  justify-content: flex-start;
 }
 
 @media (max-width: 1439px) {
