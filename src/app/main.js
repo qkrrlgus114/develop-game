@@ -560,6 +560,14 @@ function handleSubmit(event) {
     event.preventDefault();
     if (!isOfficeMailSubjectValid()) {
       appState.officeMailUi.statusMessage = '제목은 고정 가이드를 그대로 따라 입력해야 합니다.';
+      render();
+      return;
+    }
+
+    if (currentStepId() !== 'compose-mail-subject') {
+      appState.officeMailUi.statusMessage = '제목 초안을 미리 작성해 두었습니다.';
+      render();
+      return;
     }
     onAttemptStep({ value: appState.officeMailUi.subject, confirmed: true });
     return;
@@ -570,6 +578,14 @@ function handleSubmit(event) {
     event.preventDefault();
     if (!isOfficeMailCcValid()) {
       appState.officeMailUi.statusMessage = 'CC는 ops@retro.company 주소로 정확히 입력해야 합니다.';
+      render();
+      return;
+    }
+
+    if (currentStepId() !== 'cc-ops') {
+      appState.officeMailUi.statusMessage = '참조 주소를 미리 입력해 두었습니다.';
+      render();
+      return;
     }
     onAttemptStep({ value: appState.officeMailUi.ccAddress, confirmed: true });
     return;

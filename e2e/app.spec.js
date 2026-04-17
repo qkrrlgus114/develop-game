@@ -42,7 +42,7 @@ test.describe('Error Popup Hell desktop flow', () => {
     await page.getByRole('button', { name: '브리핑 보기' }).first().click();
     await page.getByRole('button', { name: '미션 시작' }).click();
 
-    await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 데스크톱 UI 구현 5년\n강점: 빠른 커뮤니케이션');
+    await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 프론트엔드 UI 구현 5년\n강점: 운영 협업과 빠른 커뮤니케이션');
     await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
     await page.getByRole('button', { name: '문서/긴급제출', exact: true }).click();
     await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
@@ -57,6 +57,7 @@ test.describe('Error Popup Hell desktop flow', () => {
     await page.getByRole('button', { name: '임시 폴더 정리' }).click();
 
     await page.getByRole('button', { name: '파일 업로드' }).click();
+    await page.locator('.office-upload-dialog').getByRole('button', { name: '문서/긴급제출', exact: true }).click();
     await page.getByRole('button', { name: '박기현_이력서.txt' }).click();
     await page.getByRole('button', { name: '첨부 완료' }).click();
 
@@ -85,7 +86,7 @@ test.describe('Error Popup Hell desktop flow', () => {
     await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
     await page.getByRole('button', { name: '저장 완료' }).click();
 
-    await expect(page.getByText(/키워드가 모두 들어가야 합니다/)).toBeVisible();
+    await expect(page.locator('.office-guide__status')).toContainText('키워드가 모두 들어가야 합니다');
   });
 
   test('office mission penalizes wrong attachment choice from decoy folders/files', async ({ page }) => {
