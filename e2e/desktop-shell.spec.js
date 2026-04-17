@@ -48,7 +48,6 @@ async function shellWindow(page, kind) {
       '[data-testid="window-games"]',
       '[data-window-title*="Games"]',
       '[aria-label="Games window"]',
-      '[aria-label="Games"]',
     ],
     popupHell: [
       '[data-window-id="popup-hell"]',
@@ -56,7 +55,6 @@ async function shellWindow(page, kind) {
       '[data-testid="window-popup-hell"]',
       '[data-window-title*="Popup Hell"]',
       '[aria-label="Popup Hell window"]',
-      '[aria-label="Popup Hell"]',
     ],
   };
 
@@ -109,14 +107,30 @@ test.describe('Windows 95 desktop shell', () => {
     await expect(startMenu).toBeHidden();
   });
 
+  test('does not open the Games folder on single click and only opens on double-click', async ({ page }) => {
+    await page.goto('/');
+
+    const gamesIcon = await desktopIcon(page, 'games');
+    await expect(gamesIcon).toBeVisible();
+
+    await gamesIcon.click();
+    await expect(page.locator('[data-window-id="games-folder"]')).toHaveCount(0);
+
+    await gamesIcon.dblclick();
+    await expect(page.locator('[data-window-id="games-folder"]')).toBeVisible();
+    await expect(page.locator('.taskbar').getByText('Games')).toBeVisible();
+  });
+
   test('opens Games and Popup Hell with double-click and preserves the win flow', async ({ page }) => {
     await page.goto('/');
     await page.clock.install();
 
     await openLauncherFromDesktop(page);
 
-    await expect(page.getByRole('heading', { name: '오늘 처리할 업무를 고르세요' })).toBeVisible();
-    await page.getByRole('button', { name: '브리핑 보기' }).first().click();
+    await expect(page.getByRole('heading', { name: '오늘 처리할 업무를 고르세요' }).first()).toBeVisible();
+    await expect(page.locator('.taskbar').getByText('Games')).toBeVisible();
+    await expect(page.locator('.taskbar').getByText('Popup Hell.exe')).toBeVisible();
+    await page.locator('[data-window-id="popup-hell-launcher"]').getByRole('button', { name: '브리핑 보기' }).click();
     await page.getByRole('button', { name: '미션 시작' }).click();
 
     await page.getByRole('textbox', { name: '새 파일명' }).fill('q3-final-pitch');
@@ -151,9 +165,12 @@ test.describe('Windows 95 desktop shell', () => {
     const before = await popupHellWindow.boundingBox();
     expect(before).not.toBeNull();
 
-    await dragHandle.hover({ force: true });
+    const handleBox = await dragHandle.boundingBox();
+    expect(handleBox).not.toBeNull();
+
+    await page.mouse.move((handleBox?.x ?? 0) + 32, (handleBox?.y ?? 0) + 12);
     await page.mouse.down();
-    await page.mouse.move((before?.x ?? 0) + 120, (before?.y ?? 0) + 90, { steps: 8 });
+    await page.mouse.move((before?.x ?? 0) + 180, (before?.y ?? 0) + 120, { steps: 12 });
     await page.mouse.up();
 
     const after = await popupHellWindow.boundingBox();

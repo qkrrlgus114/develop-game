@@ -1,0 +1,232 @@
+.briefing-window {
+  width: min(840px, calc(100vw - 180px));
+}
+
+.briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.briefing-actions,
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.run-hud-window {
+  width: min(320px, calc(100vw - 40px));
+}
+
+.run-workspace-window {
+  width: min(860px, calc(100vw - 370px));
+}
+
+.hud-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.run-meta {
+  margin: 0;
+  color: #244140;
+  font-size: 0.88rem;
+}
+
+.hud-stats,
+.result-stats,
+.ambient-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.hud-stats dt,
+.result-stats dt,
+.ambient-stats dt {
+  font-size: 0.76rem;
+  color: #394748;
+}
+
+.hud-stats dd,
+.result-stats dd,
+.ambient-stats dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
+.checklist {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist li {
+  padding: 8px 10px;
+  border: 2px solid #111;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.28);
+}
+
+.checklist li.active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(0, 128, 128, 0.08)),
+    rgba(0, 128, 128, 0.18);
+}
+
+.checklist li.done {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(31, 122, 52, 0.08)),
+    rgba(31, 122, 52, 0.2);
+}
+
+.feedback-box {
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.progress-pill {
+  background: linear-gradient(180deg, #f0e6bb, #d1c690);
+}
+
+.desk-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.88fr);
+  gap: 16px;
+}
+
+.current-step,
+.mission-notes {
+  display: grid;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.step-form {
+  display: grid;
+  gap: 12px;
+}
+
+.step-form label,
+.workspace-mail-form label {
+  display: grid;
+  gap: 8px;
+}
+
+input,
+textarea {
+  min-height: 42px;
+  border: 2px solid;
+  border-color: #868686 #fff #fff #868686;
+  padding: 10px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 36%),
+    #faf7ee;
+  color: #111;
+}
+
+textarea {
+  min-height: 132px;
+}
+
+.popup-layer {
+  position: relative;
+  min-height: 360px;
+  padding: 16px;
+  border: 2px dashed rgba(17, 17, 17, 0.45);
+  background:
+    linear-gradient(180deg, rgba(8, 16, 22, 0.08), transparent 24%),
+    linear-gradient(135deg, rgba(0, 128, 128, 0.08), rgba(255, 255, 255, 0.28));
+  overflow: hidden;
+}
+
+.workspace-backdrop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 100%;
+}
+
+.popup-card {
+  position: absolute;
+  top: var(--offset-y);
+  left: var(--offset-x);
+  z-index: var(--popup-z, 1);
+  width: min(332px, calc(100% - 100px));
+  padding: 0;
+  border: 2px solid #111;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 22%),
+    linear-gradient(180deg, var(--neo-bureau-window-surface), var(--neo-bureau-panel-surface));
+  box-shadow:
+    5px 6px 0 rgba(0, 0, 0, 0.24),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.94),
+    inset -2px -2px 0 rgba(104, 104, 104, 0.94);
+}
+
+.popup-card.is-noise {
+  width: min(286px, calc(100% - 110px));
+  opacity: 0.94;
+}
+
+.popup-card.is-priority {
+  transform: translate(-8px, -10px);
+}
+
+.popup-card.low {
+  border-left: 8px solid #103f81;
+}
+
+.popup-card.medium {
+  border-left: 8px solid #d97706;
+}
+
+.popup-card.high {
+  border-left: 8px solid #b52a2a;
+}
+
+.popup-card.is-blocker {
+  box-shadow:
+    0 0 0 3px rgba(181, 42, 42, 0.18),
+    5px 6px 0 rgba(0, 0, 0, 0.24),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.94),
+    inset -2px -2px 0 rgba(104, 104, 104, 0.94);
+}
+
+.popup-card__titlebar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px 0;
+}
+
+.popup-card__body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quiet-note {
+  margin: 0;
+  color: #203536;
+}

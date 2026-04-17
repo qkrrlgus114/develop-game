@@ -1,0 +1,37 @@
+.result-window {
+  width: min(760px, calc(100vw - 180px));
+}
+
+.result-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 18px;
+}
+
+.grade-badge {
+  width: 88px;
+  height: 88px;
+  font-size: 2rem;
+}
+
+.grade-badge.success {
+  background: #d9f7be;
+}
+
+.grade-badge.fail {
+  background: #ffccc7;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.score-line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}

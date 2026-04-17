@@ -4,7 +4,8 @@ test('hotfix mission keeps the real blocker actionable when a fake popup is also
   await page.goto('/#/missions');
   await page.clock.install();
 
-  await page.getByRole('button', { name: '브리핑 보기' }).nth(1).click();
+  await page.getByRole('button', { name: '핫픽스 브랜치 밀어 올리기' }).click();
+  await page.getByRole('button', { name: '브리핑 보기' }).click();
   await page.getByRole('button', { name: '미션 시작' }).click();
 
   await page.getByRole('button', { name: 'payment-service 기준으로 해결' }).click();
