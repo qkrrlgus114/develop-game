@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const files = [
   'index.html',
   'src/app/main.js',
+  'src/app/stepInputState.js',
   'src/data/missions/index.js',
   'src/features/gameplay/engine.js',
   'src/lib/storage.js',
@@ -21,10 +22,12 @@ for (const relativePath of files) {
   const contents = await readFile(resolve(process.cwd(), relativePath), 'utf8');
   const lines = contents.split('\n');
   lines.forEach((line, index) => {
-    if (/\s+$/.test(line)) {
+    const normalizedLine = line.replace(/\r$/, '');
+
+    if (/[ \t]+$/.test(normalizedLine)) {
       problems.push(`${relativePath}:${index + 1} trailing whitespace`);
     }
-    if (/\t/.test(line)) {
+    if (/\t/.test(normalizedLine)) {
       problems.push(`${relativePath}:${index + 1} tab indentation is not allowed`);
     }
   });
