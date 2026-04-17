@@ -136,22 +136,31 @@ test.describe('Windows 95 desktop shell', () => {
     await expect(page.locator('.taskbar').getByText('Popup Hell.exe')).toBeVisible();
     await expect(page.locator('.taskbar').getByText('Mission HUD')).toBeVisible();
 
-    await page.getByRole('textbox', { name: '새 파일명' }).fill('q3-final-pitch');
-    await page.getByRole('button', { name: '단계 완료' }).click();
+    await page.getByRole('textbox').first().fill('이름: 박기현\n경력 요약: 데스크톱 UI 구현 5년\n강점: 빠른 커뮤니케이션');
+    await page.getByRole('button', { name: '다른 이름으로 저장' }).click();
+    await page.getByRole('button', { name: '문서/긴급제출' }).click();
+    await page.getByRole('textbox').nth(1).fill('박기현_이력서.txt');
+    await page.getByRole('button', { name: '저장 완료' }).click();
+
+    await page.getByRole('button', { name: '메일 작성하기' }).click();
+    await page.getByRole('textbox', { name: '메일 제목' }).fill('[긴급 제출] 박기현_이력서 전달드립니다');
+    await page.getByRole('button', { name: '제목 입력 완료' }).click();
 
     await page.clock.fastForward('00:13');
     await expect(page.getByRole('heading', { name: '첨부 저장소 용량 초과' })).toBeVisible();
     await page.getByRole('button', { name: '임시 폴더 정리' }).click();
 
-    await page.getByRole('button', { name: '제안서 첨부' }).click();
+    await page.getByRole('button', { name: '파일 업로드' }).click();
+    await page.getByRole('button', { name: '박기현_이력서.txt' }).click();
+    await page.getByRole('button', { name: '첨부 완료' }).click();
+
+    await page.getByRole('textbox', { name: 'CC 주소' }).fill('ops@retro.company');
+    await page.getByRole('button', { name: '참조 추가 완료' }).click();
 
     await page.clock.fastForward('00:01');
     await expect(page.getByRole('heading', { name: '법무 문구 누락' })).toBeVisible();
     await page.getByRole('button', { name: '문구 적용' }).click();
-
-    await page.getByRole('textbox', { name: 'CC 주소' }).fill('ops@retro.company');
-    await page.getByRole('button', { name: '단계 완료' }).click();
-    await page.getByRole('button', { name: '메일 발송' }).click();
+    await page.getByRole('button', { name: '발송하기' }).click();
 
     await expect(page).toHaveURL(/#\/result\//);
     await expect(page.getByRole('heading', { name: '업무 완료!' })).toBeVisible();

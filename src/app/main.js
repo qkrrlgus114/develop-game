@@ -59,6 +59,7 @@ const appState = {
   lastResult: null,
   startMenuOpen: false,
   selectedMissionId: missions[0]?.id ?? null,
+  officeMailUi: createOfficeMailUiState(),
   stepInput: createStepInputState(),
   windowState: {
     nextZ: 30,
@@ -88,6 +89,26 @@ appRoot.addEventListener('submit', handleSubmit);
 
 syncRouteState();
 render();
+
+function createOfficeMailUiState() {
+  return {
+    noteContent: '',
+    saveDialogOpen: false,
+    selectedFolder: '문서/긴급제출',
+    fileName: '',
+    savedFileName: '',
+    mailComposerOpen: false,
+    subject: '',
+    selectedAttachment: '',
+    attachmentPickerOpen: false,
+    ccAddress: '',
+    statusMessage: '',
+  };
+}
+
+function resetOfficeMailUi() {
+  appState.officeMailUi = createOfficeMailUiState();
+}
 
 function parseRoute() {
   const rawHash = window.location.hash.replace(/^#/, '') || '/';
@@ -176,6 +197,10 @@ function syncRouteState() {
 
   if (appState.route.page !== 'run') {
     resetStepInputState(appState.stepInput);
+  }
+
+  if (appState.route.page !== 'run' && appState.route.page !== 'how-to-play') {
+    resetOfficeMailUi();
   }
 }
 
@@ -326,6 +351,86 @@ function handleClick(event) {
     return;
   }
 
+  if (action === 'open-save-dialog') {
+    appState.officeMailUi.saveDialogOpen = true;
+    render();
+    return;
+  }
+
+  if (action === 'select-save-folder' && target.dataset.folderName) {
+    appState.officeMailUi.selectedFolder = target.dataset.folderName;
+    render();
+    return;
+  }
+
+  if (action === 'save-note-as') {
+    const scenario = getOfficeMailScenario();
+    if (!scenario) {
+      return;
+    }
+
+    const noteContent = appState.officeMailUi.noteContent.trim();
+    if (noteContent.length < 12) {
+      appState.officeMailUi.statusMessage = '메모장에 이력서 내용을 조금 더 작성해야 합니다.';
+      render();
+      return;
+    }
+
+    if (appState.officeMailUi.selectedFolder !== scenario.requiredFolder) {
+      appState.officeMailUi.statusMessage = `${scenario.requiredFolder} 폴더에 저장해야 합니다.`;
+      render();
+      return;
+    }
+
+    if (appState.officeMailUi.fileName.trim() !== scenario.requiredFileName) {
+      appState.officeMailUi.statusMessage = `파일명은 ${scenario.requiredFileName} 이어야 합니다.`;
+      render();
+      return;
+    }
+
+    appState.officeMailUi.savedFileName = scenario.requiredFileName;
+    appState.officeMailUi.saveDialogOpen = false;
+    appState.officeMailUi.statusMessage = `${scenario.requiredFolder} 폴더에 ${scenario.requiredFileName} 저장 완료`;
+    onAttemptStep({ confirmed: true });
+    return;
+  }
+
+  if (action === 'open-mail-compose') {
+    appState.officeMailUi.mailComposerOpen = true;
+    render();
+    return;
+  }
+
+  if (action === 'open-attachment-picker') {
+    appState.officeMailUi.attachmentPickerOpen = true;
+    render();
+    return;
+  }
+
+  if (action === 'select-attachment-file' && target.dataset.fileName) {
+    appState.officeMailUi.selectedAttachment = target.dataset.fileName;
+    render();
+    return;
+  }
+
+  if (action === 'confirm-attachment') {
+    const scenario = getOfficeMailScenario();
+    if (!scenario) {
+      return;
+    }
+
+    if (appState.officeMailUi.selectedAttachment !== scenario.requiredFileName) {
+      appState.officeMailUi.statusMessage = `${scenario.requiredFileName} 파일을 정확히 선택해야 합니다.`;
+      render();
+      return;
+    }
+
+    appState.officeMailUi.attachmentPickerOpen = false;
+    appState.officeMailUi.statusMessage = `${scenario.requiredFileName} 첨부 완료`;
+    onAttemptStep({ confirmed: true });
+    return;
+  }
+
   if (action === 'launcher-play' && target.dataset.missionId) {
     startRun(target.dataset.missionId);
     navigate(`#/run/${target.dataset.missionId}`);
@@ -418,6 +523,20 @@ function handlePointerUp() {
 }
 
 function handleSubmit(event) {
+  const officeSubjectForm = event.target.closest('[data-office-subject-form]');
+  if (officeSubjectForm) {
+    event.preventDefault();
+    onAttemptStep({ value: appState.officeMailUi.subject, confirmed: true });
+    return;
+  }
+
+  const officeCcForm = event.target.closest('[data-office-cc-form]');
+  if (officeCcForm) {
+    event.preventDefault();
+    onAttemptStep({ value: appState.officeMailUi.ccAddress, confirmed: true });
+    return;
+  }
+
   const form = event.target.closest('[data-step-form]');
   if (!form) {
     return;
@@ -430,6 +549,26 @@ function handleSubmit(event) {
 }
 
 function handleInput(event) {
+  if (event.target.dataset.officeField === 'note-content') {
+    appState.officeMailUi.noteContent = event.target.value;
+    return;
+  }
+
+  if (event.target.dataset.officeField === 'save-file-name') {
+    appState.officeMailUi.fileName = event.target.value;
+    return;
+  }
+
+  if (event.target.dataset.officeField === 'mail-subject') {
+    appState.officeMailUi.subject = event.target.value;
+    return;
+  }
+
+  if (event.target.dataset.officeField === 'cc-address') {
+    appState.officeMailUi.ccAddress = event.target.value;
+    return;
+  }
+
   if (!isStepInputElement(event.target)) {
     return;
   }
@@ -452,6 +591,7 @@ function startRun(missionId) {
     state,
   };
   appState.selectedMissionId = mission.id;
+  resetOfficeMailUi();
   ensureWindowOpen('games-folder');
   ensureWindowOpen('popup-hell-launcher');
   ensureWindowOpen('run-hud');
@@ -605,6 +745,19 @@ function isDesktopReady() {
 
 function getSelectedMission() {
   return getMissionById(appState.selectedMissionId) ?? missions[0] ?? null;
+}
+
+function getOfficeMailScenario() {
+  return getSelectedMission()?.officeMailScenario ?? null;
+}
+
+function getOfficeAttachmentChoices() {
+  const scenario = getOfficeMailScenario();
+  if (!scenario) {
+    return [];
+  }
+
+  return [scenario.requiredFileName, ...scenario.fakeFiles];
 }
 
 function getResultSummary(runId) {
@@ -1228,6 +1381,19 @@ function renderRunWindow(targetWindowId) {
     });
   }
 
+  if (mission.id === 'office-mail-001') {
+    return renderWindow({
+      windowId: 'run-workspace',
+      title: currentStep ? currentStep.label : 'WORK DESK',
+      kind: 'app',
+      code: 'RUN',
+      width: 'min(980px, calc(100vw - 370px))',
+      className: 'run-workspace-window office-mail-window',
+      closeNav: '#/missions',
+      body: renderOfficeMailWorkspace(runState, currentStep),
+    });
+  }
+
   return renderWindow({
       windowId: 'run-workspace',
       title: currentStep ? currentStep.label : 'WORK DESK',
@@ -1266,6 +1432,218 @@ function renderRunWindow(targetWindowId) {
         </section>
       `,
     });
+}
+
+function renderOfficeMailWorkspace(runState, currentStep) {
+  const scenario = getOfficeMailScenario();
+  const ui = appState.officeMailUi;
+
+  if (!scenario) {
+    return '';
+  }
+
+  const saveGuide = `${scenario.requiredFolder} 폴더에 ${scenario.requiredFileName} 로 저장해야 합니다.`;
+  const subjectGuide = `제목은 정확히 ${scenario.requiredSubject}`;
+  const ccGuide = `참조(CC)는 ${scenario.requiredCc}`;
+  const attachGuide = `${scenario.requiredFileName} 파일을 선택해야 합니다.`;
+  const savedLabel = ui.savedFileName ? `${scenario.requiredFolder}/${ui.savedFileName}` : '아직 저장된 파일이 없습니다.';
+  const attachedLabel = ui.selectedAttachment || '아직 첨부된 파일이 없습니다.';
+
+  return `
+    <div class="workspace-top">
+      <div>
+        <p class="eyebrow">CURRENT TASK</p>
+        <h2>${currentStep ? currentStep.label : '메일 발송 준비'}</h2>
+      </div>
+      <p class="progress-pill">${Math.min(runState.stepIndex + 1, runState.mission.steps.length)} / ${runState.mission.steps.length} STEP</p>
+    </div>
+    <div class="office-layout">
+      <section class="office-stack">
+        <article class="office-window panel-card office-notepad">
+          <div class="office-window__titlebar">
+            <span>NOTEPAD</span>
+            <span>TXT</span>
+          </div>
+          <div class="office-window__body">
+            <p class="eyebrow">이력서 메모</p>
+            <textarea
+              data-office-field="note-content"
+              placeholder="${escapeHtmlAttribute(scenario.notePlaceholder)}"
+            >${escapeHtmlAttribute(ui.noteContent)}</textarea>
+            <div class="workspace-actions">
+              <button type="button" class="retro-button secondary" data-action="open-save-dialog">다른 이름으로 저장</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="office-window panel-card office-mail-composer ${ui.mailComposerOpen || runState.completedStepIds.includes('compose-mail-subject') ? '' : 'is-muted'}">
+          <div class="office-window__titlebar">
+            <span>MAIL COMPOSER</span>
+            <span>MSG</span>
+          </div>
+          <div class="office-window__body">
+            <div class="office-mail__meta">
+              <div><dt>받는 사람</dt><dd>ceo@retro.company</dd></div>
+              <div><dt>참조</dt><dd>${ui.ccAddress || scenario.requiredCc}</dd></div>
+              <div><dt>첨부</dt><dd>${ui.savedFileName ? attachedLabel : '저장된 파일 필요'}</dd></div>
+            </div>
+            ${!ui.mailComposerOpen && !runState.completedStepIds.includes('compose-mail-subject')
+              ? `<div class="workspace-actions"><button type="button" class="retro-button primary" data-action="open-mail-compose">메일 작성하기</button></div>`
+              : `
+                <form class="office-form" data-office-subject-form>
+                  <label>
+                    <span>메일 제목</span>
+                    <input
+                      data-office-field="mail-subject"
+                      type="text"
+                      placeholder="${escapeHtmlAttribute(scenario.requiredSubject)}"
+                      value="${escapeHtmlAttribute(ui.subject)}"
+                      autocomplete="off"
+                    />
+                  </label>
+                  <label>
+                    <span>메일 내용</span>
+                    <textarea readonly>${escapeHtmlAttribute(scenario.emailBody)}</textarea>
+                  </label>
+                  <div class="workspace-actions">
+                    <button type="submit" class="retro-button primary">제목 입력 완료</button>
+                  </div>
+                </form>
+              `}
+            ${currentStep?.id === 'attach-resume' ? `
+              <div class="workspace-actions">
+                <button type="button" class="retro-button primary" data-action="open-attachment-picker">파일 업로드</button>
+              </div>
+            ` : ''}
+          </div>
+        </article>
+      </section>
+
+      <aside class="office-sidebar">
+        <article class="panel-card office-guide">
+          <p class="eyebrow">필수 가이드</p>
+          <ul>
+            <li>${saveGuide}</li>
+            <li>${subjectGuide}</li>
+            <li>${attachGuide}</li>
+            <li>${ccGuide}</li>
+          </ul>
+          <p class="office-guide__status">${ui.statusMessage || runState.lastFeedback}</p>
+        </article>
+        <article class="panel-card office-status">
+          <p class="eyebrow">현재 상태</p>
+          <dl class="ambient-stats">
+            <div><dt>저장 파일</dt><dd>${savedLabel}</dd></div>
+            <div><dt>선택 첨부</dt><dd>${attachedLabel}</dd></div>
+            <div><dt>메일 제목</dt><dd>${ui.subject || '입력 대기'}</dd></div>
+            <div><dt>참조 주소</dt><dd>${ui.ccAddress || '입력 대기'}</dd></div>
+          </dl>
+        </article>
+      </aside>
+    </div>
+
+    ${ui.saveDialogOpen ? `
+      <section class="floating-dialog office-save-dialog">
+        <div class="office-window__titlebar">
+          <span>SAVE AS</span>
+          <span>TXT</span>
+        </div>
+        <div class="office-window__body">
+          <p class="eyebrow">저장 위치 선택</p>
+          <div class="folder-choice-list">
+            ${scenario.saveFolders.map((folder) => `
+              <button
+                type="button"
+                class="retro-button ${ui.selectedFolder === folder ? 'primary' : 'secondary'}"
+                data-action="select-save-folder"
+                data-folder-name="${folder}"
+              >
+                ${folder}
+              </button>
+            `).join('')}
+          </div>
+          <label>
+            <span>파일 이름</span>
+            <input
+              data-office-field="save-file-name"
+              type="text"
+              placeholder="${escapeHtmlAttribute(scenario.requiredFileName)}"
+              value="${escapeHtmlAttribute(ui.fileName)}"
+              autocomplete="off"
+            />
+          </label>
+          <div class="workspace-actions">
+            <button type="button" class="retro-button primary" data-action="save-note-as">저장 완료</button>
+          </div>
+        </div>
+      </section>
+    ` : ''}
+
+    ${currentStep?.id === 'attach-resume' || ui.attachmentPickerOpen ? `
+      <section class="floating-dialog office-upload-dialog">
+        <div class="office-window__titlebar">
+          <span>FILE UPLOAD</span>
+          <span>DIR</span>
+        </div>
+        <div class="office-window__body">
+          <p class="eyebrow">첨부 파일 선택</p>
+          <div class="file-choice-list">
+            ${getOfficeAttachmentChoices().map((fileName) => `
+              <button
+                type="button"
+                class="retro-button ${ui.selectedAttachment === fileName ? 'primary' : 'secondary'}"
+                data-action="select-attachment-file"
+                data-file-name="${fileName}"
+              >
+                ${fileName}
+              </button>
+            `).join('')}
+          </div>
+          <div class="workspace-actions">
+            <button type="button" class="retro-button primary" data-action="confirm-attachment">첨부 완료</button>
+          </div>
+        </div>
+      </section>
+    ` : ''}
+
+    ${currentStep?.id === 'cc-ops' ? `
+      <section class="floating-dialog office-cc-dialog">
+        <div class="office-window__titlebar">
+          <span>CC ENTRY</span>
+          <span>ADDR</span>
+        </div>
+        <div class="office-window__body">
+          <form class="office-form" data-office-cc-form>
+            <label>
+              <span>CC 주소</span>
+              <input
+                data-office-field="cc-address"
+                type="text"
+                placeholder="${escapeHtmlAttribute(scenario.requiredCc)}"
+                value="${escapeHtmlAttribute(ui.ccAddress)}"
+                autocomplete="off"
+              />
+            </label>
+            <div class="workspace-actions">
+              <button type="submit" class="retro-button primary">참조 추가 완료</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    ` : ''}
+
+    ${currentStep?.id === 'send-mail' ? `
+      <div class="workspace-actions office-send-action">
+        <button type="button" class="retro-button primary" data-action="step-click">발송하기</button>
+      </div>
+    ` : ''}
+
+    <section class="popup-layer" aria-label="현재 팝업">
+      ${renderWorkspaceBackdrop(runState, currentStep)}
+      ${getDisplayPopups(runState.activePopups).map((popup, index, items) => renderPopup(popup, index, items.length)).join('')}
+      ${runState.activePopups.length === 0 ? '<p class="quiet-note">현재 열린 팝업이 없습니다. 체크리스트를 진행하세요.</p>' : ''}
+    </section>
+  `;
 }
 
 function renderResultWindow() {

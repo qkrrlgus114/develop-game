@@ -8,17 +8,18 @@ test('real blocker must be resolved before blocked step can succeed', () => {
   const mission = getMissionById('office-mail-001');
   let run = createRunState(mission, 0);
 
-  run = attemptStep(run, { value: 'q3-final-pitch', confirmed: true });
+  run = attemptStep(run, { confirmed: true });
+  run = attemptStep(run, { value: '[긴급 제출] 박기현_이력서 전달드립니다', confirmed: true });
   run = tickRun(run, 12_500);
   assert.equal(run.activePopups.some((popup) => popup.id === 'storage-quota'), true);
 
   const blockedAttempt = attemptStep(run, { confirmed: true });
-  assert.equal(blockedAttempt.stepIndex, 1);
+  assert.equal(blockedAttempt.stepIndex, 2);
   assert.equal(blockedAttempt.strikes, 1);
 
   const recovered = resolvePopupAction(blockedAttempt, 'storage-quota', 'fix');
   const advanced = attemptStep(recovered, { confirmed: true });
-  assert.equal(advanced.stepIndex, 2);
+  assert.equal(advanced.stepIndex, 3);
 });
 
 test('wrong fake popup interaction costs time', () => {
