@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 const files = [
   'src/app/main.js',
+  'src/app/stepInputState.js',
   'src/data/missions/index.js',
   'src/features/gameplay/engine.js',
   'src/lib/storage.js',
